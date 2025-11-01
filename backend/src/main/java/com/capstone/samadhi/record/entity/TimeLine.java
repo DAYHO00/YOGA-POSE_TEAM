@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 
 @Data
 @Entity
@@ -23,6 +24,7 @@ public class TimeLine extends TimeStamp {
     private int youtube_end_sec;
     private String pose;
     private float score;
+    private String image;
 
     @ManyToOne
     @JoinColumn(name="recordId")

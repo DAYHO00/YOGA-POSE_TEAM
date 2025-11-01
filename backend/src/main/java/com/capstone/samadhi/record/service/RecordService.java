@@ -3,7 +3,9 @@ package com.capstone.samadhi.record.service;
 import com.capstone.samadhi.common.ResponseDto;
 import com.capstone.samadhi.record.dto.RecordRequest;
 import com.capstone.samadhi.record.dto.RecordResponse;
+import com.capstone.samadhi.record.dto.TimeLineRequest;
 import com.capstone.samadhi.record.entity.Record;
+import com.capstone.samadhi.record.entity.TimeLine;
 import com.capstone.samadhi.record.repository.RecordRepository;
 import com.capstone.samadhi.security.entity.User;
 import com.capstone.samadhi.security.repo.UserRepository;
@@ -14,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,15 +25,19 @@ import java.util.stream.Collectors;
 @Transactional(readOnly=true)
 @RequiredArgsConstructor
 public class RecordService {
+    private final TimeLineService timeLineService;
     private final RecordRepository recordRepository;
     private final UserRepository userRepository;
     @Transactional
-    public ResponseDto<RecordResponse> save(String userId, RecordRequest request) {
+    public ResponseDto<RecordResponse> save(String userId, RecordRequest request) throws IOException {
         User user = userRepository.findById(userId).orElseThrow(EntityNotFoundException::new);
         Record record = request.toEntity(user);
-        Record savedRecord = recordRepository.save(record);
-        RecordResponse response = RecordResponse.from(savedRecord);
-        return new ResponseDto<>(true, response);
+        recordRepository.save(record);
+        for (TimeLineRequest timeLineRequest : request.timeLineList()) {
+            TimeLine timeLine = timeLineService.saveTimeLine(timeLineRequest);
+            timeLine.addRecord(record);
+        }
+        return new ResponseDto<>(true, RecordResponse.from(record));
     }
 
     public ResponseDto<RecordResponse> findById(String userId, Long id) throws AccessDeniedException {

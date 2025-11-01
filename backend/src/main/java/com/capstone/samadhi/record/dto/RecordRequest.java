@@ -37,11 +37,6 @@ public record RecordRequest(
                 .timeLineList(new ArrayList<>())
                 .build();
         record.addUser(user);
-        if (this.timeLineList != null) {
-            this.timeLineList.stream()
-                    .map(TimeLineRequest::toEntity) // TimeLine 엔티티로 변환
-                    .forEach(timeLine -> timeLine.addRecord(record)); // '연관관계 편의 메소드' 사용
-        }
 
         return record;
     }

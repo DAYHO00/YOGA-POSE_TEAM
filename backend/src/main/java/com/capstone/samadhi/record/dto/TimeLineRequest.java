@@ -1,9 +1,12 @@
 package com.capstone.samadhi.record.dto;
 
+import com.capstone.samadhi.common.service.S3Service;
 import com.capstone.samadhi.record.entity.TimeLine;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 
 public record TimeLineRequest(
 
@@ -20,14 +23,9 @@ public record TimeLineRequest(
 
         @NotNull(message = "점수는 필수입니다.")
         @PositiveOrZero(message = "점수는 0 이상이어야 합니다.")
-        int score
+        int score,
+
+        MultipartFile image
 ) {
-    public TimeLine toEntity() {
-        return TimeLine.builder()
-                .youtube_start_sec(this.youtube_start_sec)
-                .youtube_end_sec(this.youtube_end_sec)
-                .pose(this.pose)
-                .score(this.score)
-                .build();
-    }
+
 }

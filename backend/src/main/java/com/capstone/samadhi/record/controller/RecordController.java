@@ -21,6 +21,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.security.Security;
 import java.util.List;
@@ -40,7 +41,7 @@ public class RecordController {
     })
     public ResponseEntity<ResponseDto<RecordResponse>> createMessage(
             @Valid @RequestBody RecordRequest request
-    ){
+    ) throws IOException {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(recordService.save(SecurityUtil.getCurrentUser(), request));
