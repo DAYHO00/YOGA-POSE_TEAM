@@ -55,7 +55,7 @@ export default function Navbar() {
             </Link>
             <Link href='/auth/signup'>
               <Button
-                variant='outline'
+                variant='ghost'
                 className='text-base font-medium h-10 px-4 border-gray-300 hover:bg-gray-50 transition-colors'
               >
                 회원가입
