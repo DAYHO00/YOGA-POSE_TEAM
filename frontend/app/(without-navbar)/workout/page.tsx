@@ -3,6 +3,7 @@
 import { useRef, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMediaPipe } from "@/hooks/useMediaPipe";
+import { useCanvasCapture } from "@/hooks/useCanvasCapture";
 import { WebcamCanvas } from "@/components/webcam/WebcamCanvas";
 import { Button } from "@/components/ui/button";
 import { usePoseStore } from "@/store/poseStore";
@@ -16,6 +17,7 @@ import { VideoControls } from "@/components/video/VideoControls";
 import { motion, AnimatePresence } from "framer-motion";
 import ExitConfirmModal from "@/components/workout/ExitConfirmModal";
 import { toast } from "sonner";
+import TimelineClipper from "@/components/timeline/TimelineClipper";
 
 function useWebcamLifecycle(isReady: boolean) {
   const startWebcam = useWebcamStore((state) => state.startWebcam);
@@ -156,6 +158,12 @@ export default function WorkoutPage() {
   const [showSimilarity, setShowSimilarity] = useState(true);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
 
+  // canvas 캡쳐 hook
+  //   useCanvasCapture({
+  //     poseClass: video.poseClass,
+  //     enabled: true,
+  //   });
+
   const isScreenShare = sourceType === "stream";
   const isReady = isSetupComplete && isInitialized;
 
@@ -229,56 +237,56 @@ export default function WorkoutPage() {
 
   if (!isReady) {
     return (
-      <div className='flex items-center justify-center min-h-screen bg-gray-50'>
-        <div className='p-8 text-center bg-white rounded-lg shadow-lg'>
-          <div className='w-10 h-10 mx-auto mb-4 border-4 border-blue-400 rounded-full border-t-transparent animate-spin'></div>
-          <p className='text-gray-600'>운동 데이터를 준비 중입니다...</p>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="p-8 text-center bg-white rounded-lg shadow-lg">
+          <div className="w-10 h-10 mx-auto mb-4 border-4 border-blue-400 rounded-full border-t-transparent animate-spin"></div>
+          <p className="text-gray-600">운동 데이터를 준비 중입니다...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className='flex flex-col h-screen bg-black text-white'>
-      <header className='flex items-center justify-between px-4 py-2 bg-black/80 backdrop-blur-sm z-40 shrink-0'>
+    <div className="flex flex-col h-screen bg-black text-white">
+      <header className="flex items-center justify-between px-4 py-2 bg-black/80 backdrop-blur-sm z-40 shrink-0">
         <Button
-          variant='outline'
+          variant="outline"
           onClick={() => setIsSettingsOpen(true)}
-          className='flex items-center justify-center gap-2 w-20 bg-white/10 border-white/20 text-white hover:bg-white hover:text-black'
+          className="flex items-center justify-center gap-2 w-20 bg-white/10 border-white/20 text-white hover:bg-white hover:text-black"
         >
-          <FiSettings className='w-4 h-4' />
-          <span className='hidden sm:inline'>설정</span>
+          <FiSettings className="w-4 h-4" />
+          <span className="hidden sm:inline">설정</span>
         </Button>
 
-        <div className='flex-1'></div>
+        <div className="flex-1"></div>
 
         <Button
-          variant='outline'
+          variant="outline"
           onClick={handleExit}
-          className='flex items-center justify-center gap-2 w-20 bg-white/10 border-white/20 text-white hover:text-white hover:bg-red-600 hover:border-red-600'
+          className="flex items-center justify-center gap-2 w-20 bg-white/10 border-white/20 text-white hover:text-white hover:bg-red-600 hover:border-red-600"
         >
-          <FiX className='w-4 h-4' />
-          <span className='hidden sm:inline'>종료</span>
+          <FiX className="w-4 h-4" />
+          <span className="hidden sm:inline">종료</span>
         </Button>
       </header>
 
-      <main className='flex flex-1 overflow-hidden'>
+      <main className="flex flex-1 overflow-hidden">
         <div
-          className='transition-all duration-300 flex items-center justify-center bg-black h-full'
+          className="transition-all duration-300 flex items-center justify-center bg-black h-full"
           style={{
             width: videoContainerWidth,
             padding: settings.hideVideo ? "0" : "1rem",
             overflow: "hidden",
           }}
         >
-          <div className='w-full max-w-full'>
+          <div className="w-full max-w-full">
             <VideoCanvas
               videoRef={videoRef}
               isInitialized={isInitialized}
               landmarker={videoLandmarker}
             />
             {!isScreenShare && (
-              <div className='p-2 bg-black/50 rounded-b-lg'>
+              <div className="p-2 bg-black/50 rounded-b-lg">
                 <VideoControls
                   isPlaying={isPlaying}
                   currentTime={currentTime}
@@ -292,14 +300,14 @@ export default function WorkoutPage() {
         </div>
 
         <div
-          className='transition-all duration-300 flex items-center justify-center bg-black h-full'
+          className="transition-all duration-300 flex items-center justify-center bg-black h-full"
           style={{
             width: webcamContainerWidth,
             padding: settings.hideWebcam ? "0" : "1rem",
             overflow: "hidden",
           }}
         >
-          <div className='w-full max-w-full'>
+          <div className="w-full max-w-full">
             <WebcamCanvas
               videoRef={webcamVideoRef}
               isActive={isWebcamActive}
@@ -307,7 +315,7 @@ export default function WorkoutPage() {
               landmarker={webcamLandmarker}
             />
             {!isScreenShare && (
-              <div className='p-2' style={{ visibility: "hidden" }}>
+              <div className="p-2" style={{ visibility: "hidden" }}>
                 <VideoControls
                   isPlaying={false}
                   currentTime={0}
@@ -321,16 +329,18 @@ export default function WorkoutPage() {
         </div>
       </main>
 
+      <TimelineClipper />
+
       <AnimatePresence>
         {showSimilarity && (
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
-            className='fixed bottom-8 right-8 z-30'
+            className="fixed bottom-8 right-8 z-30"
           >
             <div
-              className='relative rounded-2xl shadow-2xl p-6 min-w-[180px]'
+              className="relative rounded-2xl shadow-2xl p-6 min-w-[180px]"
               style={{
                 backgroundImage:
                   "linear-gradient(90deg, #3A6BFC 0%, #19AFFF 100%)",
@@ -338,23 +348,23 @@ export default function WorkoutPage() {
             >
               <button
                 onClick={() => setShowSimilarity(false)}
-                className='absolute -top-2 -right-2 w-6 h-6 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors'
+                className="absolute -top-2 -right-2 w-6 h-6 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors"
               >
-                <FiEyeOff className='w-3 h-3 text-white' />
+                <FiEyeOff className="w-3 h-3 text-white" />
               </button>
-              <div className='text-center'>
-                <p className='text-xs font-medium text-white/80 mb-1'>
+              <div className="text-center">
+                <p className="text-xs font-medium text-white/80 mb-1">
                   자세 유사도
                 </p>
-                <div className='text-4xl font-bold text-white mb-1 w-36 text-center'>
-                  {(similarityValue * 100).toFixed(1)}%
+                <div className="text-4xl font-bold text-white mb-1 w-36 text-center">
+                  {similarityValue.toFixed(1)}%
                 </div>
-                <div className='flex items-center justify-center gap-1 mt-2'>
-                  <div className='w-full bg-white/20 rounded-full h-2 overflow-hidden'>
+                <div className="flex items-center justify-center gap-1 mt-2">
+                  <div className="w-full bg-white/20 rounded-full h-2 overflow-hidden">
                     <motion.div
-                      className='h-full bg-white rounded-full'
+                      className="h-full bg-white rounded-full"
                       initial={{ width: 0 }}
-                      animate={{ width: `${similarityValue * 100}%` }}
+                      animate={{ width: `${similarityValue}%` }}
                       transition={{ duration: 0.5 }}
                     />
                   </div>
@@ -370,12 +380,12 @@ export default function WorkoutPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           onClick={() => setShowSimilarity(true)}
-          className='fixed bottom-8 right-8 z-30 w-12 h-12 rounded-full flex items-center justify-center hover:opacity-90 transition-opacity shadow-lg'
+          className="fixed bottom-8 right-8 z-30 w-12 h-12 rounded-full flex items-center justify-center hover:opacity-90 transition-opacity shadow-lg"
           style={{
             backgroundImage: "linear-gradient(90deg, #3A6BFC 0%, #19AFFF 100%)",
           }}
         >
-          <FiEye className='w-6 h-6 text-white' />
+          <FiEye className="w-6 h-6 text-white" />
         </motion.button>
       )}
 

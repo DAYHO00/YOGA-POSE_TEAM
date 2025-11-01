@@ -14,6 +14,7 @@ import {
 import { usePoseStore } from "@/store/poseStore";
 import { JointAngles } from "@/types/pose";
 import { useVideoStore } from "@/store/videoStore";
+import { classifyPoseWithVectorized } from "@/lib/poseClassifier/pose-classifier-with-vectorized";
 
 interface VideoCanvasProps {
   videoRef: React.RefObject<HTMLVideoElement | null>;
@@ -121,8 +122,11 @@ export function VideoCanvas({
             : 0;
           lastFrameTime.current = now;
 
-          // poseStore에 비디오 데이터 저장
-          setVideoData(landmarks, angles, fps, data);
+          // 포즈 분류
+          const poseClass = classifyPoseWithVectorized(data);
+
+          // Store에 저장
+          setVideoData(landmarks, angles, fps, data, poseClass.bestPose);
 
           drawSkeleton(ctx, landmarks);
         } else {
@@ -162,10 +166,10 @@ export function VideoCanvas({
   };
 
   return (
-    <div className='relative overflow-hidden bg-black rounded-lg aspect-video'>
+    <div className="relative overflow-hidden bg-black rounded-lg aspect-video">
       <video
         ref={videoRef}
-        className='absolute inset-0 object-contain w-full h-full opacity-0'
+        className="absolute inset-0 object-contain w-full h-full opacity-0"
         autoPlay
         muted
         playsInline
@@ -173,13 +177,14 @@ export function VideoCanvas({
       />
       <canvas
         ref={canvasRef}
-        className='object-contain w-full h-full'
+        className="object-contain w-full h-full"
+        data-capture="video-canvas"
         style={{ display: sourceType !== "none" ? "block" : "none" }}
       />
       {sourceType === "none" && (
-        <div className='absolute inset-0 flex items-center justify-center'>
-          <div className='text-center text-gray-400'>
-            <Video className='w-16 h-16 mx-auto mb-4 opacity-50' />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center text-gray-400">
+            <Video className="w-16 h-16 mx-auto mb-4 opacity-50" />
             <p>감지할 비디오를 선택하세요</p>
           </div>
         </div>
