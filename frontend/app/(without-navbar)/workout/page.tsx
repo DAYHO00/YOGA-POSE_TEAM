@@ -15,6 +15,7 @@ import { VideoCanvas } from "@/components/video/VideoCanvas";
 import { VideoControls } from "@/components/video/VideoControls";
 import { motion, AnimatePresence } from "framer-motion";
 import ExitConfirmModal from "@/components/workout/ExitConfirmModal";
+import TimelineClipper from "@/components/timeline/TimelineClipper";
 
 export default function WorkoutPage() {
   const router = useRouter();
@@ -52,6 +53,9 @@ export default function WorkoutPage() {
   });
 
   const [showSimilarity, setShowSimilarity] = useState(true);
+  //   const [previousPoseClass, setPreviousPoseClass] = useState<string | null>(
+  //     null
+  //   );
 
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
 
@@ -168,58 +172,129 @@ export default function WorkoutPage() {
     setCurrentTime(time);
   };
 
+  // canvas 요소를 찾아서 이미지로 캡쳐하는 함수
+  //   const captureCanvas = (selector: string, filename: string): void => {
+  //     try {
+  //       const canvasElement = document.querySelector(
+  //         selector
+  //       ) as HTMLCanvasElement;
+  //       if (!canvasElement) {
+  //         console.warn(`${selector} 요소를 찾을 수 없습니다.`);
+  //         return;
+  //       }
+
+  //       // canvas를 이미지로 변환
+  //       canvasElement.toBlob(
+  //         (blob) => {
+  //           if (!blob) {
+  //             console.error("이미지 변환에 실패했습니다.");
+  //             return;
+  //           }
+
+  //           // Blob URL 생성
+  //           const url = URL.createObjectURL(blob);
+
+  //           // 다운로드 링크 생성 및 클릭
+  //           const link = document.createElement("a");
+  //           link.href = url;
+  //           link.download = filename;
+  //           document.body.appendChild(link);
+  //           link.click();
+  //           document.body.removeChild(link);
+
+  //           // URL 해제
+  //           setTimeout(() => URL.revokeObjectURL(url), 100);
+  //         },
+  //         "image/png",
+  //         1.0
+  //       );
+  //     } catch (error) {
+  //       console.error("캡쳐 중 오류 발생:", error);
+  //     }
+  //   };
+
+  // video.poseClass가 변경될 때 캡쳐
+  //   useEffect(() => {
+  //     if (
+  //       video.poseClass &&
+  //       video.poseClass !== previousPoseClass &&
+  //       video.poseClass !== "unknown" &&
+  //       previousPoseClass !== null
+  //     ) {
+  //       // 약간의 지연을 주어 canvas가 업데이트되도록 함
+  //       setTimeout(() => {
+  //         const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  //         const poseName = video.poseClass || "unknown";
+
+  //         // 비디오 canvas 캡쳐 (스켈레톤 포함)
+  //         captureCanvas(
+  //           "canvas[data-capture='video-canvas']",
+  //           `video-${poseName}-${timestamp}.png`
+  //         );
+
+  //         // 웹캠 canvas 캡쳐 (스켈레톤 포함)
+  //         captureCanvas(
+  //           "canvas[data-capture='webcam-canvas']",
+  //           `webcam-${poseName}-${timestamp}.png`
+  //         );
+  //       }, 200);
+  //     }
+
+  //     setPreviousPoseClass(video.poseClass);
+  //   }, [video.poseClass, previousPoseClass]);
+
   if (!isSetupComplete || !isInitialized) {
     return (
-      <div className='flex items-center justify-center min-h-screen bg-gray-50'>
-        <div className='p-8 text-center bg-white rounded-lg shadow-lg'>
-          <div className='w-10 h-10 mx-auto mb-4 border-4 border-blue-400 rounded-full border-t-transparent animate-spin'></div>
-          <p className='text-gray-600'>운동 데이터를 준비 중입니다...</p>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="p-8 text-center bg-white rounded-lg shadow-lg">
+          <div className="w-10 h-10 mx-auto mb-4 border-4 border-blue-400 rounded-full border-t-transparent animate-spin"></div>
+          <p className="text-gray-600">운동 데이터를 준비 중입니다...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className='flex flex-col h-screen bg-black text-white'>
-      <header className='flex items-center justify-between px-4 py-2 bg-black/80 backdrop-blur-sm z-40 shrink-0'>
+    <div className="flex flex-col h-screen bg-black text-white">
+      <header className="flex items-center justify-between px-4 py-2 bg-black/80 backdrop-blur-sm z-40 shrink-0">
         <Button
-          variant='outline'
+          variant="outline"
           onClick={() => setIsSettingsOpen(true)}
-          className='flex items-center justify-center gap-2 w-20 bg-white/10 border-white/20 text-white hover:bg-white hover:text-black'
+          className="flex items-center justify-center gap-2 w-20 bg-white/10 border-white/20 text-white hover:bg-white hover:text-black"
         >
-          <FiSettings className='w-4 h-4' />
-          <span className='hidden sm:inline'>설정</span>
+          <FiSettings className="w-4 h-4" />
+          <span className="hidden sm:inline">설정</span>
         </Button>
 
-        <div className='flex-1'></div>
+        <div className="flex-1"></div>
 
         <Button
-          variant='outline'
+          variant="outline"
           onClick={handleExit}
-          className='flex items-center justify-center gap-2 w-20 bg-white/10 border-white/20 text-white hover:text-white hover:bg-red-600 hover:border-red-600'
+          className="flex items-center justify-center gap-2 w-20 bg-white/10 border-white/20 text-white hover:text-white hover:bg-red-600 hover:border-red-600"
         >
-          <FiX className='w-4 h-4' />
-          <span className='hidden sm:inline'>종료</span>
+          <FiX className="w-4 h-4" />
+          <span className="hidden sm:inline">종료</span>
         </Button>
       </header>
 
-      <main className='flex flex-1 overflow-hidden'>
+      <main className="flex flex-1 overflow-hidden">
         <div
-          className='transition-all duration-300 flex items-center justify-center bg-black h-full'
+          className="transition-all duration-300 flex items-center justify-center bg-black h-full"
           style={{
             width: videoContainerWidth,
             padding: settings.hideVideo ? "0" : "1rem",
             overflow: "hidden",
           }}
         >
-          <div className='w-full max-w-full'>
+          <div className="w-full max-w-full">
             <VideoCanvas
               videoRef={videoRef}
               isInitialized={isInitialized}
               landmarker={videoLandmarker}
             />
             {!isScreenShare && (
-              <div className='p-2 bg-black/50 rounded-b-lg'>
+              <div className="p-2 bg-black/50 rounded-b-lg">
                 <VideoControls
                   isPlaying={isPlaying}
                   currentTime={currentTime}
@@ -233,14 +308,14 @@ export default function WorkoutPage() {
         </div>
 
         <div
-          className='transition-all duration-300 flex items-center justify-center bg-black h-full'
+          className="transition-all duration-300 flex items-center justify-center bg-black h-full"
           style={{
             width: webcamContainerWidth,
             padding: settings.hideWebcam ? "0" : "1rem",
             overflow: "hidden",
           }}
         >
-          <div className='w-full max-w-full'>
+          <div className="w-full max-w-full">
             <WebcamCanvas
               videoRef={webcamVideoRef}
               isActive={isWebcamActive}
@@ -248,7 +323,7 @@ export default function WorkoutPage() {
               landmarker={webcamLandmarker}
             />
             {!isScreenShare && (
-              <div className='p-2' style={{ visibility: "hidden" }}>
+              <div className="p-2" style={{ visibility: "hidden" }}>
                 <VideoControls
                   isPlaying={false}
                   currentTime={0}
@@ -262,16 +337,18 @@ export default function WorkoutPage() {
         </div>
       </main>
 
+      <TimelineClipper />
+
       <AnimatePresence>
         {showSimilarity && (
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
-            className='fixed bottom-8 right-8 z-30'
+            className="fixed bottom-8 right-8 z-30"
           >
             <div
-              className='relative rounded-2xl shadow-2xl p-6 min-w-[180px]'
+              className="relative rounded-2xl shadow-2xl p-6 min-w-[180px]"
               style={{
                 backgroundImage:
                   "linear-gradient(90deg, #3A6BFC 0%, #19AFFF 100%)",
@@ -279,23 +356,23 @@ export default function WorkoutPage() {
             >
               <button
                 onClick={() => setShowSimilarity(false)}
-                className='absolute -top-2 -right-2 w-6 h-6 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors'
+                className="absolute -top-2 -right-2 w-6 h-6 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors"
               >
-                <FiEyeOff className='w-3 h-3 text-white' />
+                <FiEyeOff className="w-3 h-3 text-white" />
               </button>
-              <div className='text-center'>
-                <p className='text-xs font-medium text-white/80 mb-1'>
+              <div className="text-center">
+                <p className="text-xs font-medium text-white/80 mb-1">
                   자세 유사도
                 </p>
-                <div className='text-4xl font-bold text-white mb-1 w-36 text-center'>
-                  {(similarityValue * 100).toFixed(1)}%
+                <div className="text-4xl font-bold text-white mb-1 w-36 text-center">
+                  {similarityValue.toFixed(1)}%
                 </div>
-                <div className='flex items-center justify-center gap-1 mt-2'>
-                  <div className='w-full bg-white/20 rounded-full h-2 overflow-hidden'>
+                <div className="flex items-center justify-center gap-1 mt-2">
+                  <div className="w-full bg-white/20 rounded-full h-2 overflow-hidden">
                     <motion.div
-                      className='h-full bg-white rounded-full'
+                      className="h-full bg-white rounded-full"
                       initial={{ width: 0 }}
-                      animate={{ width: `${similarityValue * 100}%` }}
+                      animate={{ width: `${similarityValue}%` }}
                       transition={{ duration: 0.5 }}
                     />
                   </div>
@@ -311,12 +388,12 @@ export default function WorkoutPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           onClick={() => setShowSimilarity(true)}
-          className='fixed bottom-8 right-8 z-30 w-12 h-12 rounded-full flex items-center justify-center hover:opacity-90 transition-opacity shadow-lg'
+          className="fixed bottom-8 right-8 z-30 w-12 h-12 rounded-full flex items-center justify-center hover:opacity-90 transition-opacity shadow-lg"
           style={{
             backgroundImage: "linear-gradient(90deg, #3A6BFC 0%, #19AFFF 100%)",
           }}
         >
-          <FiEye className='w-6 h-6 text-white' />
+          <FiEye className="w-6 h-6 text-white" />
         </motion.button>
       )}
 

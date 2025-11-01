@@ -7,6 +7,7 @@ const createSourceState = () => ({
   fps: 0 as number,
   previousAngles: {} as Partial<JointAngles>,
   vectorized: [] as number[],
+  poseClass: "unknown",
 });
 
 interface PoseStore {
@@ -28,21 +29,24 @@ interface PoseStore {
     landmarks: Landmark[],
     angles: JointAngles,
     fps: number,
-    vectorized: number[]
+    vectorized: number[],
+    poseClass: string,
   ) => void;
 
   setImageData: (
     landmarks: Landmark[],
     angles: JointAngles,
     fps: number,
-    vectorized: number[]
+    vectorized: number[],
+    poseClass: string,
   ) => void;
 
   setVideoData: (
     landmarks: Landmark[],
     angles: JointAngles,
     fps: number,
-    vectorized: number[]
+    vectorized: number[],
+    poseClass: string,
   ) => void;
 
   resetAllData: () => void;
@@ -75,19 +79,19 @@ export const usePoseStore = create<PoseStore>((set) => ({
       [source]: { ...state[source], previousAngles: angles },
     })),
 
-  setWebcamData: (landmarks, angles, fps, vectorized) =>
+  setWebcamData: (landmarks, angles, fps, vectorized, poseClass) =>
     set((_) => ({
-      webcam: { landmarks, angles, fps, previousAngles: {}, vectorized },
+      webcam: { landmarks, angles, fps, previousAngles: {}, vectorized, poseClass },
     })),
 
-  setImageData: (landmarks, angles, fps, vectorized) =>
+  setImageData: (landmarks, angles, fps, vectorized, poseClass) =>
     set((_) => ({
-      image: { landmarks, angles, fps, previousAngles: {}, vectorized },
+      image: { landmarks, angles, fps, previousAngles: {}, vectorized, poseClass },
     })),
 
-  setVideoData: (landmarks, angles, fps, vectorized) =>
+  setVideoData: (landmarks, angles, fps, vectorized, poseClass) =>
     set((_) => ({
-      video: { landmarks, angles, fps, previousAngles: {}, vectorized },
+      video: { landmarks, angles, fps, previousAngles: {}, vectorized, poseClass },
     })),
 
   resetImage: () => set({ image: createSourceState() }),
