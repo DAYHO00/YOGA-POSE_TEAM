@@ -17,14 +17,14 @@ import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons";
 import dayjs, { Dayjs } from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
 import { useRouter } from "next/navigation";
-import api from "@/lib/axios"; // ← 기존 axios 인스턴스 사용
+import api from "@/lib/axios";
 
 dayjs.extend(isBetween);
 
 const { Sider, Content } = Layout;
 const { Text } = Typography;
 
-/* ───────────────────────── 기존 타입 유지 ───────────────────────── */
+/* ───────────────────────── 타입 ───────────────────────── */
 interface Segment {
   startSec: number;
   endSec: number;
@@ -47,33 +47,50 @@ interface User {
   records: WorkoutRecord[];
 }
 type DisplayRecord = WorkoutRecord & {
-  id: string; // ← 목록/상세 구분에 사용할 "레코드 id"
+  id: string;
   name: string;
   age: number;
   height: number;
   weight: number;
-  userId?: string; // ← 상세 이동 시 동일 인물 식별용(쿼리 전달)
+  userId?: string;
 };
 
-/* ─────────────────────── 스타일 (그대로) ─────────────────────── */
+/* ─────────────────────── 스타일 ─────────────────────── */
+/** 상단 네비게이션(헤더) 높이. 실제 높이에 맞게 조정하세요. */
+const HEADER_H = 64;
+
+/** 페이지 루트를 헤더 아래에 고정시켜 부모 스크롤을 제거 */
 const layoutStyle: React.CSSProperties = {
-  height: "100dvh",
+  position: "fixed",
+  top: HEADER_H, // 헤더 바로 아래부터
+  left: 0,
+  right: 0,
+  bottom: 0, // 뷰포트 하단까지
+  height: `calc(100dvh - ${HEADER_H}px)`,
   background: "#f5f5f5",
-  overflow: "hidden",
+  overflow: "hidden", // 부모 스크롤 제거
 };
+
 const innerLayoutStyle: React.CSSProperties = {
+  height: "100%", // 자식 레이아웃이 꽉 차도록
   minHeight: 0,
   background: "#f5f5f5",
+  overflow: "hidden", // 자식도 넘치지 않게
 };
+
 const siderStyle: React.CSSProperties = {
   background: "#fff",
   padding: 16,
+  height: "100%",
+  overflowY: "auto", // 사이드바 내용이 넘치면 여기서만 스크롤
 };
+
 const contentStyle: React.CSSProperties = {
   padding: 24,
   background: "#f5f5f5",
-  overflowY: "auto",
+  overflowY: "auto", // 본문 스크롤은 여기 하나만
   minHeight: 0,
+  height: "100%",
 };
 
 const cardChrome: React.CSSProperties = {
@@ -230,7 +247,6 @@ const CardLikeBox: React.FC<
 
 /* ───────────────────── 유틸 (나이 계산 & 어댑터) ───────────────────── */
 const calcAgeFromBirth = (birth: string): number => {
-  // birth: "YYYY-MM-DD"
   const b = dayjs(birth, "YYYY-MM-DD", true);
   if (!b.isValid()) return 0;
   const today = dayjs();
@@ -244,14 +260,7 @@ const calcAgeFromBirth = (birth: string): number => {
 
 /** Swagger 응답 → 기존 타입으로 맵핑 */
 const adaptResponseToDisplay = (raw: any[]): DisplayRecord[] => {
-  // raw[i] 예시:
-  // {
-  //   id, dateTime: "2025-11-01T15:00:00", workingout_time, youtube_url, total_score,
-  //   timelines: [{ youtube_start_sec, youtube_end_sec, pose, score }],
-  //   user: { id, nickname, birth, weight, height, ... }
-  // }
   const out: DisplayRecord[] = [];
-
   raw.forEach((rec: any) => {
     const user = rec?.user ?? {};
     const name: string = user?.nickname ?? "";
@@ -275,7 +284,7 @@ const adaptResponseToDisplay = (raw: any[]): DisplayRecord[] => {
       height,
       weight,
       userId: String(user?.id ?? ""),
-      date: String(rec?.dateTime ?? "").split("T")[0] || "", // "YYYY-MM-DD"
+      date: String(rec?.dateTime ?? "").split("T")[0] || "",
       duration: Number(rec?.workingout_time ?? 0),
       youtubeUrl: String(rec?.youtube_url ?? ""),
       mean: Number(rec?.total_score ?? 0),
@@ -283,7 +292,6 @@ const adaptResponseToDisplay = (raw: any[]): DisplayRecord[] => {
     };
     out.push(display);
   });
-
   return out;
 };
 
@@ -291,12 +299,12 @@ const adaptResponseToDisplay = (raw: any[]): DisplayRecord[] => {
 const WorkoutDashboard: React.FC = () => {
   const router = useRouter();
 
-  // 서버에서 받아오는 페이지 데이터
-  const [records, setRecords] = useState<DisplayRecord[]>([]);
+  // 전체 원본 목록(서버에서 1회 전체 가져옴)
+  const [allRecords, setAllRecords] = useState<DisplayRecord[]>([]);
   const [collapsed, setCollapsed] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // 필터 UI 상태 (그대로)
+  // 필터 UI 상태
   const [uiDuration, setUiDuration] = useState<[number, number]>([0, 999]);
   const [uiMean, setUiMean] = useState<[number, number]>([0, 100]);
   const [uiStartDate, setUiStartDate] = useState<Dayjs | null>(null);
@@ -310,31 +318,18 @@ const WorkoutDashboard: React.FC = () => {
     null,
   ]);
 
-  // 페이지네이션 (서버 페이징 사용, size=8 고정)
+  // 페이지네이션(프론트 전담)
   const [currentPage, setCurrentPage] = useState<number>(1);
   const pageSize = 8;
-  const [totalElements, setTotalElements] = useState<number>(0); // 백엔드에서 total 제공 시 반영
 
-  const fetchPage = async (page: number) => {
+  // ✅ 전체 데이터 1회 로드 (params 없이)
+  const fetchAllRecords = async () => {
     try {
       setLoading(true);
-      const params: any = {
-        page: 8,
-      };
-      console.log("[GET] /api/record params =>", params);
-
-      const res = await api.get("/api/record", { params });
-      console.log("[GET] /api/record response =>", res);
-
+      const res = await api.get("/api/record");
       const msg = Array.isArray(res?.data?.message) ? res.data.message : [];
       const adapted = adaptResponseToDisplay(msg);
-
-      // 서버가 total 개수를 내려주면 사용, 아니면 페이지 단위로만 표기
-      const total = Number(res?.data?.totalElements ?? 0);
-      if (total > 0) setTotalElements(total);
-      else setTotalElements(page * pageSize + (adapted?.length ?? 0)); // 추정치
-
-      setRecords(adapted);
+      setAllRecords(adapted);
     } catch (e) {
       console.error("Failed to fetch /api/record:", e);
       message.error("운동 기록을 불러오지 못했습니다.");
@@ -344,11 +339,10 @@ const WorkoutDashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchPage(currentPage);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage]);
+    fetchAllRecords();
+  }, []);
 
-  // 필터 적용 (클라이언트 사이드: 현재 페이지 데이터 범위에서만 필터 적용)
+  // 필터 적용
   const applyFilters = () => {
     setLoading(true);
     setTimeout(() => {
@@ -362,8 +356,9 @@ const WorkoutDashboard: React.FC = () => {
       } else {
         setDateRange([null, null]);
       }
+      setCurrentPage(1);
       setLoading(false);
-    }, 200);
+    }, 150);
   };
 
   const parseYMD = (d: string) => dayjs(d, "YYYY-MM-DD", true);
@@ -377,9 +372,10 @@ const WorkoutDashboard: React.FC = () => {
     );
   };
 
+  // 필터링된 전체 목록
   const filtered = useMemo(
     () =>
-      records.filter(
+      allRecords.filter(
         (r) =>
           r.duration >= duration[0] &&
           r.duration <= duration[1] &&
@@ -387,10 +383,18 @@ const WorkoutDashboard: React.FC = () => {
           r.mean <= mean[1] &&
           isInDateRange(r.date)
       ),
-    [records, duration, mean, dateRange]
+    [allRecords, duration, mean, dateRange]
   );
 
-  // 상세 페이지 이동 (첫 페이지에서 받은 **원본 모든 정보**를 쿼리로 전달)
+  // 현재 페이지에 보여줄 슬라이스
+  const startIdx = (currentPage - 1) * pageSize;
+  const endIdx = startIdx + pageSize;
+  const pageItems = useMemo(
+    () => filtered.slice(startIdx, endIdx),
+    [filtered, startIdx, endIdx]
+  );
+
+  // 상세 이동
   const gotoDetail = (r: DisplayRecord) => {
     const q = new URLSearchParams({
       id: r.id,
@@ -408,7 +412,6 @@ const WorkoutDashboard: React.FC = () => {
     if (r.segments && r.segments.length > 0) {
       q.set("segments", JSON.stringify(r.segments));
     }
-    console.log("[NAV] /record/detail?...", Object.fromEntries(q.entries()));
     router.push(`/record/detail?${q.toString()}`);
   };
 
@@ -602,7 +605,7 @@ const WorkoutDashboard: React.FC = () => {
                     alignItems: "stretch",
                   }}
                 >
-                  {filtered.map((r) => (
+                  {pageItems.map((r) => (
                     <div key={r.id} style={{ height: "100%" }}>
                       {renderButtonCard(r)}
                     </div>
@@ -619,9 +622,7 @@ const WorkoutDashboard: React.FC = () => {
                   <Pagination
                     current={currentPage}
                     pageSize={pageSize}
-                    total={
-                      totalElements || currentPage * pageSize + filtered.length
-                    }
+                    total={filtered.length}
                     showSizeChanger={false}
                     onChange={(page) => setCurrentPage(page)}
                   />
