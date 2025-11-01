@@ -29,7 +29,11 @@ jobs:
       - name: Build Docker image
         run: |
           IMAGE_URI=${{ steps.login-ecr.outputs.registry }}/samadhi-frontend:latest
-          docker build -t samadhi-frontend:latest ./frontend
+
+          docker build \
+            --build-arg NEXT_PUBLIC_API_URL=https://api.samadhi.kr \
+            -t samadhi-frontend:latest ./frontend
+          # docker build -t samadhi-frontend:latest ./frontend
             
           docker tag samadhi-frontend:latest $IMAGE_URI
 
