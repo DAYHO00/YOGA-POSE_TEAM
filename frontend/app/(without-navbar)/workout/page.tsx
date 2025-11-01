@@ -16,8 +16,11 @@ import { VideoControls } from "@/components/video/VideoControls";
 import { motion, AnimatePresence } from "framer-motion";
 import ExitConfirmModal from "@/components/workout/ExitConfirmModal";
 import { toast } from "sonner";
-import TimelineClipper from "@/components/timeline/TimelineClipper";
+import TimelineClipper, {
+  type TimelineClipperRef,
+} from "@/components/timeline/TimelineClipper";
 import SimilarityDisplay from "@/components/workout/SimilarityDisplay";
+import api from "@/lib/axios";
 
 function useWebcamLifecycle(isReady: boolean) {
   const startWebcam = useWebcamStore((state) => state.startWebcam);
@@ -146,7 +149,9 @@ export default function WorkoutPage() {
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const webcamVideoRef = useRef<HTMLVideoElement | null>(null);
+  const timelineClipperRef = useRef<TimelineClipperRef>(null);
   const webcamStream = useWebcamStore((state) => state.stream);
+  const workoutStartTimeRef = useRef<number>(Date.now());
 
   const [isSetupComplete, setIsSetupComplete] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -156,6 +161,7 @@ export default function WorkoutPage() {
     videoSize: 50,
   });
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const isScreenShare = sourceType === "stream";
   const isReady = isSetupComplete && isInitialized;
 
@@ -210,8 +216,77 @@ export default function WorkoutPage() {
 
   const handleExit = () => setIsExitModalOpen(true);
 
-  const handleConfirmExit = () => {
-    router.push("/");
+  const handleConfirmExit = async () => {
+    try {
+      setIsSubmitting(true);
+
+      // 타임라인 데이터 가져오기
+      const timelines = timelineClipperRef.current?.getTimelines() || [];
+      const startTime =
+        timelineClipperRef.current?.getStartTime() ||
+        workoutStartTimeRef.current;
+
+      if (timelines.length === 0) {
+        toast.error("저장할 운동 데이터가 없습니다.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      // 운동 시간 계산 (초 단위)
+      const endTime = Date.now();
+      const workingoutTime = Math.floor((endTime - startTime) / 1000);
+
+      // 총 점수 계산 (평균 유사도)
+      const totalScore = Math.round(
+        timelines.reduce((sum, t) => sum + t.similarity, 0) / timelines.length
+      );
+
+      // 유튜브 URL (현재는 source를 URL로 사용, 스크린 공유인 경우 처리)
+      const youtubeUrl =
+        sourceType === "url" && typeof source === "string"
+          ? source
+          : sourceType === "stream"
+          ? "screen-share"
+          : "";
+
+      // 타임라인 데이터 변환 (첫 시작 시간 기준 상대 시간)
+      const timelineData = timelines.map((timeline) => {
+        const startTimeSec = Math.floor(
+          (timeline.startTime - startTime) / 1000
+        );
+        const endTimeSec = Math.floor(
+          ((timeline.endTime || Date.now()) - startTime) / 1000
+        );
+
+        return {
+          youtube_start_sec: startTimeSec,
+          youtube_end_sec: endTimeSec,
+          pose: timeline.pose,
+          score: Math.round(timeline.similarity),
+        };
+      });
+
+      // 서버에 전송할 데이터 (백엔드 형식에 맞춤)
+      const recordData = {
+        datetime: new Date().toISOString(),
+        workingout_time: workingoutTime,
+        youtube_url: youtubeUrl,
+        total_score: totalScore,
+        timeLineList: timelineData, // 백엔드 RecordRequest의 필드명과 일치
+      };
+
+      // API 호출
+      await api.post("/api/record/", recordData);
+
+      toast.success("운동 기록이 저장되었습니다.");
+      router.push("/");
+    } catch (error: any) {
+      console.error("운동 기록 저장 실패:", error);
+      toast.error(
+        error.response?.data?.message || "운동 기록 저장에 실패했습니다."
+      );
+      setIsSubmitting(false);
+    }
   };
 
   const handleTogglePlay = () => {
@@ -337,7 +412,7 @@ export default function WorkoutPage() {
         </div>
       </main>
 
-      <TimelineClipper />
+      <TimelineClipper ref={timelineClipperRef} />
 
       <SimilarityDisplay similarityValue={similarityValue} />
 
@@ -350,8 +425,13 @@ export default function WorkoutPage() {
 
       <ExitConfirmModal
         isOpen={isExitModalOpen}
-        onClose={() => setIsExitModalOpen(false)}
+        onClose={() => {
+          if (!isSubmitting) {
+            setIsExitModalOpen(false);
+          }
+        }}
         onConfirm={handleConfirmExit}
+        isSubmitting={isSubmitting}
       />
     </div>
   );

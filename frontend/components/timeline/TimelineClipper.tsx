@@ -2,18 +2,23 @@
 
 import { CalculateSimilarity } from "@/lib/mediapipe/angle-calculator";
 import { usePoseStore } from "@/store/poseStore";
-import { useEffect, useState } from "react";
+import { useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 
-type Timeline = {
+export type Timeline = {
   pose: string;
   startTime: number;
   endTime: number;
   similarity: number;
 };
 
-export default function TimelineClipper() {
+export type TimelineClipperRef = {
+  getTimelines: () => Timeline[];
+  getStartTime: () => number;
+};
+
+const TimelineClipper = forwardRef<TimelineClipperRef>((props, ref) => {
   const { video, webcam } = usePoseStore();
   const [currentPose, setCurrentPose] = useState<string | null>(null);
   const [timelines, setTimelines] = useState<Timeline[]>([]);
@@ -94,6 +99,12 @@ export default function TimelineClipper() {
 
   const firstStartTime =
     timelines.length > 0 ? timelines[0].startTime : Date.now();
+
+  // 부모 컴포넌트에서 타임라인 데이터를 가져올 수 있도록 expose
+  useImperativeHandle(ref, () => ({
+    getTimelines: () => timelines,
+    getStartTime: () => firstStartTime,
+  }));
 
   return (
     <>
@@ -192,4 +203,8 @@ export default function TimelineClipper() {
       )}
     </>
   );
-}
+});
+
+TimelineClipper.displayName = "TimelineClipper";
+
+export default TimelineClipper;
