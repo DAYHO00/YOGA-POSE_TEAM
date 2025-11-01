@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   title: "Samadhi",
   description: "Personal Yoga Care Partner",
   icons: {
-    icon: "/images/logo.svg",
+    icon: "/images/logo-small.svg",
   },
 };
 
@@ -26,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang='en'>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
