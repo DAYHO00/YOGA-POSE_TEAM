@@ -20,6 +20,7 @@ import java.io.InputStream;
 @RequiredArgsConstructor
 @Slf4j
 public class S3Service {
+
     private final S3AsyncClient amazonS3;
     @Value("${spring.cloud.aws.s3.bucket}")
     private String bucket;

@@ -35,7 +35,7 @@ public class AuthService {
         }
         String url = "https://samadhi-bucket.s3.ap-northeast-2.amazonaws.com/default-profile.png";
         //프로필 등록
-        if(dto.getProfile() != null) {
+        if(dto.getProfile() != null && !dto.getProfile().isEmpty()) {
             try {
                 url = s3Service.uploadFile(dto.getProfile());
             } catch (Exception e) {
@@ -99,7 +99,7 @@ public class AuthService {
             log.error("타입 에러: {}", e.getMessage());
             throw new NumberFormatException("타입이 맞지 않습니다");
         }
-        if(dto.getProfile() != null) {
+        if(dto.getProfile() != null && !dto.getProfile().isEmpty()) {
             try {
                 String url = s3Service.uploadFile(dto.getProfile());
                 user.setProfile(url);
