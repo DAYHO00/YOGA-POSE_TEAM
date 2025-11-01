@@ -173,10 +173,7 @@ export default function ReadyPage() {
             }}
             className='min-h-screen flex items-center justify-center'
           >
-            <StepSampleVideo
-              onComplete={handleSampleVideoComplete}
-              selectedVideo={selectedSampleVideo}
-            />
+            <StepSampleVideo onComplete={handleSampleVideoComplete} />
           </section>
         )}
 

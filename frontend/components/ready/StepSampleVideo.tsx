@@ -1,49 +1,76 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import api from "@/lib/axios";
 
-const SAMPLE_VIDEOS = [
-  {
-    title: "Morning Yoga Flow",
-    path: "/videos/test_h264.m4v",
-    thumbPath:
-      "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&h=300&fit=crop",
-    duration: "15분",
-  },
-  {
-    title: "Full Body HIIT Workout",
-    path: "/videos/test_h264.m42",
-    thumbPath:
-      "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&h=300&fit=crop",
-    duration: "20분",
-  },
-  {
-    title: "Core Strength Training",
-    path: "/videos/test_h264.m43",
-    thumbPath:
-      "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=400&h=300&fit=crop",
-    duration: "12분",
-  },
-];
+interface SampleVideo {
+  id: number;
+  title: string;
+  path: string;
+  thumbPath: string;
+  duration: number;
+}
 
 interface StepSampleVideoProps {
   onComplete: (video: { title: string; path: string } | null) => void;
-  selectedVideo: { title: string; path: string } | null;
 }
 
-export default function StepSampleVideo({
-  onComplete,
-  selectedVideo,
-}: StepSampleVideoProps) {
+export default function StepSampleVideo({ onComplete }: StepSampleVideoProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [videos, setVideos] = useState<SampleVideo[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchVideos = async () => {
+      try {
+        setIsLoading(true);
+        const response = await api.get<{
+          success: boolean;
+          message: SampleVideo[];
+        }>("/api/video");
+
+        if (response.data && response.data.success) {
+          setVideos(response.data.message);
+        } else {
+          setError("샘플 영상을 불러오는데 실패했습니다.");
+        }
+      } catch (err) {
+        console.error("Error fetching videos:", err);
+        setError("영상을 불러오는 중 오류가 발생했습니다.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchVideos();
+  }, []);
 
   const handleCardClick = (index: number) => {
     setSelectedIndex(index);
-    const video = SAMPLE_VIDEOS[index];
-    onComplete({ title: video.title, path: video.path });
+    const video = videos[index];
+    if (video) {
+      onComplete({ title: video.title, path: video.path });
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className='flex justify-center items-center h-64'>
+        <p className='text-gray-600'>샘플 영상을 불러오는 중입니다...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className='flex justify-center items-center h-64'>
+        <p className='text-red-500'>{error}</p>
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -60,9 +87,9 @@ export default function StepSampleVideo({
       </p>
 
       <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
-        {SAMPLE_VIDEOS.map((video, index) => (
+        {videos.map((video, index) => (
           <motion.div
-            key={index}
+            key={video.id} // key는 index보다 고유한 id를 사용하는 것이 좋습니다.
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: index * 0.1 }}
@@ -80,7 +107,7 @@ export default function StepSampleVideo({
                 alt={video.title}
               />
               <div className='absolute top-2 right-2 px-2 py-1 text-xs font-semibold text-white bg-black/70 rounded'>
-                {video.duration}
+                {`${video.duration}분`}
               </div>
             </div>
 
