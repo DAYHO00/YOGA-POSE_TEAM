@@ -4,6 +4,7 @@ import { useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useWebcamStore } from "@/store/webcamStore";
+import { toast } from "sonner";
 
 interface StepWebcamProps {
   onComplete: (isActive: boolean) => void;
@@ -36,7 +37,7 @@ export default function StepWebcam({ onComplete }: StepWebcamProps) {
   const handleStartWebcam = useCallback(async () => {
     await startWebcam();
     if (webcamError) {
-      alert(`웹캠 활성화 실패: ${webcamError}`);
+      toast(`웹캠 활성화 실패: ${webcamError}`);
     }
   }, [startWebcam, webcamError]);
 

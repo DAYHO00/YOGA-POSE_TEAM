@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FiMonitor } from "react-icons/fi";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 
 interface StepScreenShareProps {
   onComplete: (isSelected: boolean) => void;
@@ -27,11 +28,11 @@ export default function StepScreenShare({
 
       if (stream) {
         onComplete(true);
-        alert("화면 공유 스트림 획득 성공!");
+        toast("화면 공유 스트림 획득 성공!");
       }
     } catch (error) {
       console.error("화면 공유 실패:", error);
-      alert("화면 공유를 시작하지 못했습니다. 권한을 확인해주세요.");
+      toast("화면 공유를 시작하지 못했습니다. 권한을 확인해주세요.");
       onComplete(false);
     } finally {
       setIsLoading(false);
