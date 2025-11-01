@@ -26,23 +26,10 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Fetch .env file from ec2
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: 3.34.132.201
-          username: ec2-user
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: /home/ec2-user/samadhi/web/.env
-          target: ./frontend/.env
-
       - name: Build Docker image
         run: |
           IMAGE_URI=${{ steps.login-ecr.outputs.registry }}/samadhi-frontend:latest
-          cat ./frontend/.env
-          
-          docker build \ 
-            --build-arg ENV_FILE=.env \
-            -t samadhi-frontend:latest ./frontend
+          docker build -t samadhi-frontend:latest ./frontend
             
           docker tag samadhi-frontend:latest $IMAGE_URI
 
