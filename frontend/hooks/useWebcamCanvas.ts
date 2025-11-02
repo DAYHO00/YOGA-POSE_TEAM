@@ -11,7 +11,10 @@ import {
 } from "@/lib/mediapipe/angle-calculator";
 import { usePoseStore } from "@/store/poseStore";
 import { JointAngles } from "@/types/pose";
-import { classifyPoseWithVectorized, normalizeMirroredVectorized } from "@/lib/poseClassifier/pose-classifier-with-vectorized";
+import {
+  classifyPoseWithVectorized,
+  normalizeMirroredVectorized,
+} from "@/lib/poseClassifier/pose-classifier-with-vectorized";
 
 interface UseWebcamCanvasProps {
   videoRef: React.RefObject<HTMLVideoElement | null>;
@@ -98,7 +101,9 @@ export function useWebcamCanvas({
         }
 
         // 벡터화
-        const data = normalizeMirroredVectorized(vectorize(landmarks, video.videoHeight, video.videoWidth));
+        // const data = normalizeMirroredVectorized(vectorize(landmarks, video.videoHeight, video.videoWidth));
+
+        const data = vectorize(landmarks, video.videoHeight, video.videoWidth);
 
         // 2D 랜드마크가 감지되었다면, 각도 계산 여부와 관계없이 스켈레톤을 즉시 그림
         drawSkeleton(ctx, landmarks);
@@ -116,7 +121,7 @@ export function useWebcamCanvas({
             ? Math.round(1000 / (now - lastFrameTime.current))
             : 0;
           lastFrameTime.current = now;
-          
+
           // 포즈 분류
           const poseClass = classifyPoseWithVectorized(data);
 

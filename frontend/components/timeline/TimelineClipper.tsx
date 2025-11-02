@@ -26,7 +26,7 @@ const TimelineClipper = forwardRef<TimelineClipperRef>((props, ref) => {
   const [showSimilarity, setShowSimilarity] = useState(true);
 
   useEffect(() => {
-    console.log(video.poseClass, currentPose);
+    // console.log(video.poseClass, currentPose);
     if (video.poseClass !== currentPose) {
       const now = Date.now();
       if (currentPose !== "unknown") {

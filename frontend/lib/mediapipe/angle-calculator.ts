@@ -1,4 +1,5 @@
 import type { Landmark, JointAngles } from "@/types/pose";
+import { normalizeMirroredVectorized } from "../poseClassifier/pose-classifier-with-vectorized";
 
 // MediaPipe 랜드마크 인덱스 (총 33개 중 각도 계산에 필요한 주요 랜드마크만 정의)
 export const LANDMARK_INDICES = {
@@ -449,6 +450,7 @@ export function CalculateSimilarity(
   P2: number[],
   lambda: number = 0.7
 ): number {
+  P1 = normalizeMirroredVectorized(P1);
   const result = CalculateCosAndEuc(P1, P2);
   return CalculateMixedScore(result, lambda);
 }
