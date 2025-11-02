@@ -57,8 +57,6 @@ export function classifyPoseWithVectorized(vectorized: number[], angles?: JointA
       const _angleMaxForThisPose = distanceOriginal > distanceMirrored ? angleDistanceOriginal : angleDistanceMirrored;
       const angleMaxForThisPose = angles ? _angleMaxForThisPose : ANGLE_THRESHOLD + 1; // 각도 데이터가 없으면 각도 조건 무시
       
-    //   console.log(`Pose: ${name}, VecDistOriginal: ${distanceOriginal.toFixed(2)}, VecDistMirrored: ${distanceMirrored.toFixed(2)}, AngleDistOriginal: ${angleDistanceOriginal.toFixed(2)}, AngleDistMirrored: ${angleDistanceMirrored.toFixed(2)}`);
-
       if (maxForThisPose > VEC_THRESHOLD && angleMaxForThisPose > ANGLE_THRESHOLD && maxForThisPose > maxDistance) {
         maxDistance = maxForThisPose + angleMaxForThisPose;
         bestPose = name;
