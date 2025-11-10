@@ -140,8 +140,8 @@ function BigPanel({
   onNext: () => void;
 }) {
   const timeText = seg
-    ? `유튜브 시간 : ${toMMSS(seg.startSec)} ~ ${toMMSS(seg.endSec)}`
-    : "유튜브 시간 : 00:00 ~ 00:00";
+    ? `영상 시간 : ${toMMSS(seg.startSec)} ~ ${toMMSS(seg.endSec)}`
+    : "영상 시간 : 00:00 ~ 00:00";
   const avgText = seg ? `평균 점수 ${seg.mean.toFixed(1)}%` : "평균 점수 -";
 
   return (
@@ -346,7 +346,7 @@ const RecordDetailClient: React.FC = () => {
                     운동시간: Number.isFinite(Number(duration))
                       ? formatHMS(Number(duration))
                       : "-",
-                    "유튜브 URL": youtubeUrl ? (
+                    "영상 URL": youtubeUrl ? (
                       <a
                         href={youtubeUrl}
                         target="_blank"
