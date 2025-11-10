@@ -1,137 +1,44 @@
 "use client";
-import React, { useMemo, useCallback } from "react";
-import { Row, Col, Typography, Card, Progress, Tag, Button } from "antd";
-import { useSearchParams, useRouter } from "next/navigation";
-import {
-  UserOutlined,
-  CalendarOutlined,
-  ClockCircleOutlined,
-  LineChartOutlined,
-  LeftOutlined,
-  RightOutlined,
-} from "@ant-design/icons";
 
-const { Text, Title } = Typography;
+import React, { useMemo, useCallback } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+
+// shadcn/ui
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+
+// icons (lucide-react)
+import {
+  User as UserIcon,
+  Calendar as CalendarIcon,
+  Clock as ClockIcon,
+  LineChart as LineChartIcon,
+  ChevronUp,
+  ChevronDown,
+} from "lucide-react";
 
 /* ───────────── 스타일 토큰 ───────────── */
-const SURFACE = "#ffffff";
-const BG = "#f5f7fb";
-const RADIUS = 14;
-const SHADOW = "0 10px 30px rgba(16,24,40,0.06)";
-const G1 = "linear-gradient(135deg, #5B86E5 0%, #36D1DC 100%)";
-const G2 = "linear-gradient(135deg, #7F7FD5 0%, #86A8E7 60%, #91EAE4 100%)";
-const G3 = "linear-gradient(135deg, #6a11cb 0%, #2575fc 100%)";
+const SURFACE = "bg-white";
+const BG = "bg-[#f5f7fb]";
+const RADIUS = "rounded-2xl";
+const SHADOW = "shadow-[0_10px_30px_rgba(16,24,40,0.06)]";
+const G1 = "bg-[#5B86E5]";
+const G2 = "bg-[#5B86E5]";
+const G3 = "bg-[#5B86E5]";
 
 /* ───────────── 폰트 사이즈 프리셋 ───────────── */
 const FS = {
-  cardHeader: 18,
-  gridLabel: 18,
-  gridValue: 22,
-  title: "clamp(24px, 2.6vw, 34px)",
-  tag: 16,
-  avg: 22,
-  time: 19,
-  pose: "clamp(32px, 4vw, 56px)",
+  cardHeader: "text-[18px]",
+  gridLabel: "text-[18px]",
+  gridValue: "text-[22px]",
+  title: "text-[clamp(24px,2.6vw,34px)]",
+  tag: "text-[16px]",
+  avg: "text-[22px]",
+  time: "text-[19px]",
+  pose: "text-[clamp(32px,4vw,56px)]",
 };
-
-/* 공용 카드 */
-const UniformCard: React.FC<{
-  title: string;
-  icon?: React.ReactNode;
-  gradient?: string;
-  minH?: number;
-  children: React.ReactNode;
-}> = ({ title, icon, gradient = G1, minH = 152, children }) => (
-  <div
-    style={{
-      background: SURFACE,
-      borderRadius: RADIUS,
-      overflow: "hidden",
-      display: "flex",
-      flexDirection: "column",
-      boxShadow: SHADOW,
-      minHeight: minH,
-    }}
-  >
-    <div
-      style={{
-        background: gradient,
-        color: "white",
-        padding: "14px 16px",
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-      }}
-    >
-      <span
-        style={{
-          width: 30,
-          height: 30,
-          borderRadius: 999,
-          background: "rgba(255,255,255,0.25)",
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 20,
-        }}
-      >
-        {icon}
-      </span>
-      <Text
-        style={{ color: "white", fontWeight: 800, fontSize: FS.cardHeader }}
-      >
-        {title}
-      </Text>
-    </div>
-    <div style={{ padding: 16, display: "grid", gap: 12, flex: 1 }}>
-      {children}
-    </div>
-  </div>
-);
-
-/* 라벨-값 그리드 */
-const InfoGrid: React.FC<{
-  data: Record<string, React.ReactNode>;
-  cols?: string;
-}> = ({ data, cols = "120px 1fr" }) => (
-  <div
-    style={{
-      display: "grid",
-      gridTemplateColumns: cols,
-      rowGap: 10,
-      columnGap: 16,
-      alignItems: "start",
-    }}
-  >
-    {Object.entries(data).map(([k, v]) => (
-      <React.Fragment key={k}>
-        <div
-          style={{
-            textAlign: "left",
-            fontWeight: 800,
-            color: "#2c2c2c",
-            fontSize: FS.gridLabel,
-          }}
-        >
-          {k}
-        </div>
-        <div
-          style={{
-            textAlign: "left",
-            color: "#475467",
-            fontSize: FS.gridValue,
-            /* 긴 URL 줄바꿈 */
-            wordBreak: "break-all",
-            whiteSpace: "normal",
-            maxWidth: "100%",
-          }}
-        >
-          {v}
-        </div>
-      </React.Fragment>
-    ))}
-  </div>
-);
 
 /* 시간 포맷 H시간 M분 S초 */
 const formatHMS = (sec: number) => {
@@ -146,7 +53,7 @@ const formatHMS = (sec: number) => {
 
 /* 시간 포맷 mm:ss */
 const toMMSS = (sec: number) => {
-  const s = Math.max(0, Math.floor(sec));
+  const s = Math.max(0, Math.floor(Number(sec) || 0));
   const mm = String(Math.floor(s / 60)).padStart(2, "0");
   const ss = String(s % 60).padStart(2, "0");
   return `${mm}:${ss}`;
@@ -155,126 +62,144 @@ const toMMSS = (sec: number) => {
 /* ───────────── 타입 ───────────── */
 type Segment = { startSec: number; endSec: number; pose: string; mean: number };
 
+/* 공용 카드 */
+function UniformCard({
+  title,
+  icon,
+  gradient = G1,
+  minH = 168,
+  children,
+}: {
+  title: string;
+  icon?: React.ReactNode;
+  gradient?: string;
+  minH?: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className={`${SURFACE} ${RADIUS} ${SHADOW} overflow-hidden flex flex-col`}
+      style={{ minHeight: minH }}
+    >
+      <div
+        className={`${gradient} text-white px-4 py-3 flex items-center gap-3`}
+      >
+        <span className="w-[30px] h-[30px] rounded-full bg-white/25 inline-flex items-center justify-center text-[20px]">
+          {icon}
+        </span>
+        <span className={`font-extrabold ${FS.cardHeader}`}>{title}</span>
+      </div>
+
+      <div className="p-4 flex-1 flex flex-col justify-center gap-2">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/* 라벨-값 그리드 */
+function InfoGrid({
+  data,
+  cols = "clamp(110px, 24vw, 160px) 1fr", // ★ 반응형 라벨 폭
+}: {
+  data: Record<string, React.ReactNode>;
+  cols?: string;
+}) {
+  return (
+    <div
+      className="grid gap-x-4 gap-y-4 items-start max-w-full"
+      style={{ gridTemplateColumns: cols }}
+    >
+      {Object.entries(data).map(([k, v]) => (
+        <React.Fragment key={k}>
+          <div
+            className={`text-left font-extrabold text-[#2c2c2c] ${FS.gridLabel}`}
+          >
+            {k}
+          </div>
+          <div
+            className={`text-left text-[#475467] ${FS.gridValue} break-words break-all whitespace-normal w-full overflow-hidden`}
+          >
+            {v}
+          </div>
+        </React.Fragment>
+      ))}
+    </div>
+  );
+}
+
 /* 왼쪽 세션 요약 */
-const BigPanel: React.FC<{
+function BigPanel({
+  seg,
+  index,
+  total,
+  onPrev,
+  onNext,
+}: {
   seg: Segment | null;
   index: number;
   total: number;
   onPrev: () => void;
   onNext: () => void;
-}> = ({ seg, index, total, onPrev, onNext }) => {
+}) {
+  const timeText = seg
+    ? `유튜브 시간 : ${toMMSS(seg.startSec)} ~ ${toMMSS(seg.endSec)}`
+    : "유튜브 시간 : 00:00 ~ 00:00";
+  const avgText = seg ? `평균 점수 ${seg.mean.toFixed(1)}%` : "평균 점수 -";
+
   return (
     <div
-      style={{
-        background: SURFACE,
-        borderRadius: RADIUS,
-        boxShadow: SHADOW,
-        padding: 22,
-        display: "flex",
-        flexDirection: "column",
-        gap: 14,
-        minHeight: "min(72vh, calc(100vh - 160px))",
-        height: "100%",
-      }}
+      className={`${SURFACE} ${RADIUS} ${SHADOW} p-6 flex flex-col`}
+      style={{ minHeight: "min(72vh, calc(100vh - 160px))", height: "100%" }}
     >
-      {/* 중앙 영역 */}
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          textAlign: "center",
-          position: "relative",
-        }}
-      >
+      <div className="text-center relative top-[25px] mb-4">
+        <div className="text-[26px] sm:text-[30px] font-extrabold text-[#111827]">
+          {timeText}
+        </div>
+        <div className="mt-1 text-[22px] sm:text-[24px] font-medium text-[#667085]">
+          {avgText}
+        </div>
+      </div>
+
+      <div className="flex-1 flex flex-col items-center justify-center gap-3 pt-2">
         <Button
-          type="text"
-          icon={<LeftOutlined />}
+          variant="ghost"
+          size="icon"
           onClick={onPrev}
           disabled={index <= 0}
-          style={{
-            position: "absolute",
-            left: 24,
-            top: "50%",
-            transform: "translateY(-50%)",
-            borderRadius: 999,
-            height: 48,
-            width: 48,
-            fontSize: 18,
-          }}
-          aria-label="이전 구간"
-        />
-        <div
-          style={{
-            width: "min(80%, 960px)",
-            minWidth: 460,
-            borderRadius: 20,
-            background: "#fff",
-            border: "1px solid #eef0f4",
-            boxShadow: "0 16px 40px rgba(16,24,40,0.07)",
-            padding: "52px 40px",
-          }}
+          aria-label="이전 구간(위)"
+          className="rounded-full h-12 w-12 text-[18px]"
         >
+          <ChevronUp className="h-6 w-6" />
+        </Button>
+
+        {/* ★ 넘침 방지: min-w 제거, 가변 폭 */}
+        <div className="w-[min(92%,960px)] max-w-[960px] rounded-2xl bg-white border border-[#eef0f4] shadow-[0_16px_40px_rgba(16,24,40,0.07)] px-8 py-10">
           <div
-            style={{
-              fontSize: FS.pose,
-              fontWeight: 900,
-              letterSpacing: 0.2,
-              lineHeight: 1.25,
-            }}
+            className={`${FS.pose} font-black tracking-[0.2px] leading-tight text-center text-[#111827]`}
           >
             {seg ? seg.pose : "자세 이름"}
           </div>
         </div>
+
         <Button
-          type="text"
-          icon={<RightOutlined />}
+          variant="ghost"
+          size="icon"
           onClick={onNext}
           disabled={index >= total - 1}
-          style={{
-            position: "absolute",
-            right: 24,
-            top: "50%",
-            transform: "translateY(-50%)",
-            borderRadius: 999,
-            height: 48,
-            width: 48,
-            fontSize: 18,
-          }}
-          aria-label="다음 구간"
-        />
-        <div
-          style={{
-            position: "absolute",
-            bottom: 16,
-            right: 22,
-            fontSize: 22,
-            color: "#98a2b3",
-            fontWeight: 800,
-          }}
+          aria-label="다음 구간(아래)"
+          className="rounded-full h-12 w-12 text-[18px]"
         >
-          {total > 0 ? `${index + 1} / ${total}` : "- / -"}
-        </div>
+          <ChevronDown className="h-6 w-6" />
+        </Button>
       </div>
 
-      {/* 하단 정보 */}
-      <div style={{ textAlign: "center", marginTop: 8, marginBottom: 2 }}>
-        <div style={{ fontWeight: 800, fontSize: FS.avg, color: "#344054" }}>
-          평균 점수{" "}
-          <span style={{ fontWeight: 900 }}>
-            {seg ? `${seg.mean.toFixed(1)}%` : "-"}
-          </span>
-        </div>
-        <div style={{ marginTop: 8, color: "#667085", fontSize: FS.time }}>
-          {seg
-            ? `유튜브 시간 : ${toMMSS(seg.startSec)} ~ ${toMMSS(seg.endSec)}`
-            : "00:00 ~ 00:00"}
-        </div>
+      <div className="text-center text-[20px] sm:text-[23px] text-[#98a2b3] font-extrabold tracking-wide">
+        {total > 0 ? `${index + 1} / ${total}` : "- / -"}
       </div>
     </div>
   );
-};
+}
 
 /* ───────────── 페이지(클라) ───────────── */
 const RecordDetailClient: React.FC = () => {
@@ -291,7 +216,6 @@ const RecordDetailClient: React.FC = () => {
   const mean = sp.get("mean") ?? "";
   const meanNum = Number.isFinite(Number(mean)) ? Number(mean) : undefined;
 
-  // segments + current
   const { segments, currentIdx } = useMemo(() => {
     let segs: Segment[] = [];
     let idx = 0;
@@ -315,9 +239,7 @@ const RecordDetailClient: React.FC = () => {
                 Number.isFinite(s.mean)
             );
         }
-      } catch {
-        /* ignore */
-      }
+      } catch {}
     }
     const c = sp.get("current");
     if (c && Number.isFinite(Number(c))) {
@@ -328,7 +250,6 @@ const RecordDetailClient: React.FC = () => {
 
   const sel = segments[currentIdx] ?? null;
 
-  // 좌/우 버튼 → current 업데이트
   const updateIndex = useCallback(
     (nextIdx: number) => {
       const params = new URLSearchParams(sp.toString());
@@ -339,75 +260,49 @@ const RecordDetailClient: React.FC = () => {
   );
 
   return (
-    <div style={{ background: BG, minHeight: "100vh", padding: "18px 0" }}>
-      <div style={{ margin: "0 auto", padding: "0 18px" }}>
+    <div className={`${BG} min-h-screen py-[18px]`}>
+      <div className="mx-auto px-[18px]">
         {/* 헤더 */}
         <Card
-          style={{
-            width: "100%",
-            border: "none",
-            borderRadius: RADIUS,
-            boxShadow: SHADOW,
-            background: SURFACE,
-            marginBottom: 14,
-          }}
-          bodyStyle={{ padding: 20 }}
+          className={`w-full border-none ${RADIUS} ${SHADOW} ${SURFACE} mb-3.5`}
         >
-          <Row align="middle" justify="space-between" gutter={12}>
-            <Col>
-              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3.5">
                 <div
-                  style={{
-                    width: 50,
-                    height: 50,
-                    borderRadius: 12,
-                    background: G1,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#fff",
-                    boxShadow: "0 8px 18px rgba(91,134,229,0.35)",
-                  }}
+                  className={`w-[50px] h-[50px] ${RADIUS} ${G1} flex items-center justify-center text-white shadow-[0_8px_18px_rgba(91,134,229,0.35)]`}
                 >
-                  <UserOutlined style={{ fontSize: 24 }} />
+                  <UserIcon className="w-6 h-6" />
                 </div>
                 <div>
-                  <Title
-                    level={3}
-                    style={{ margin: 0, fontWeight: 900, fontSize: FS.title }}
-                  >
+                  <h1 className={`m-0 font-black ${FS.title}`}>
                     {name || "운동 기록 상세"}
-                  </Title>
+                  </h1>
                   {(age || height || weight) && (
-                    <Text type="secondary" style={{ fontSize: 16 }}>
+                    <p className="m-0 text-[16px] text-muted-foreground">
                       {age && `${age}세`} {height && `· ${height}cm`}{" "}
                       {weight && `· ${weight}kg`}
-                    </Text>
+                    </p>
                   )}
                 </div>
               </div>
-            </Col>
-            <Col>
               {date && (
-                <Tag
-                  style={{
-                    borderRadius: 999,
-                    padding: "6px 12px",
-                    fontWeight: 800,
-                    fontSize: FS.tag,
-                  }}
-                  color="blue"
+                <Badge
+                  className={`px-3 py-1.5 rounded-full font-extrabold ${FS.tag} flex items-center gap-1.5`}
+                  variant="secondary"
                 >
-                  <CalendarOutlined /> &nbsp;{date}
-                </Tag>
+                  <CalendarIcon className="w-4 h-4" />
+                  {date}
+                </Badge>
               )}
-            </Col>
-          </Row>
+            </div>
+          </CardContent>
         </Card>
 
         {/* 본문 */}
-        <Row gutter={16} align="top" style={{ alignItems: "stretch" }}>
-          <Col xs={24} lg={18} xl={18}>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+          {/* 왼쪽 큰 패널 */}
+          <div className="lg:col-span-9">
             <BigPanel
               seg={sel}
               index={currentIdx}
@@ -417,53 +312,37 @@ const RecordDetailClient: React.FC = () => {
                 currentIdx < segments.length - 1 && updateIndex(currentIdx + 1)
               }
             />
-          </Col>
+          </div>
 
           {/* 오른쪽 정보 */}
-          <Col xs={24} lg={6} xl={6}>
-            <div style={{ display: "grid", gap: 12, height: "100%" }}>
-              <UniformCard
-                title="개인 정보"
-                icon={<UserOutlined />}
-                gradient={G2}
-                minH={168}
-              >
-                <InfoGrid
-                  data={{
-                    나이: age ? `${age}세` : "-",
-                    키: height ? `${height}cm` : "-",
-                    몸무게: weight ? `${weight}kg` : "-",
-                  }}
-                />
-              </UniformCard>
-
+          <div className="lg:col-span-3">
+            <div className="grid gap-3 h-full">
               <UniformCard
                 title="기록 정보"
-                icon={<LineChartOutlined />}
+                icon={<LineChartIcon className="w-5 h-5" />}
                 gradient={G3}
-                minH={168}
+                minH={208}
               >
                 <InfoGrid
                   data={{
                     "유사도 평균":
-                      meanNum !== undefined ? `${meanNum.toFixed(1)}%` : "-",
+                      typeof meanNum === "number"
+                        ? `${meanNum.toFixed(1)}%`
+                        : "-",
                   }}
                 />
                 {typeof meanNum === "number" && (
-                  <div style={{ marginTop: 6 }}>
-                    <Progress
-                      percent={Number(meanNum.toFixed(1))}
-                      strokeWidth={10}
-                    />
+                  <div className="mt-3">
+                    <Progress value={Number(meanNum.toFixed(1))} />
                   </div>
                 )}
               </UniformCard>
 
               <UniformCard
                 title="세션 정보"
-                icon={<ClockCircleOutlined />}
+                icon={<ClockIcon className="w-5 h-5" />}
                 gradient={G1}
-                minH={168}
+                minH={208}
               >
                 <InfoGrid
                   data={{
@@ -471,20 +350,12 @@ const RecordDetailClient: React.FC = () => {
                     운동시간: Number.isFinite(Number(duration))
                       ? formatHMS(Number(duration))
                       : "-",
-
                     "유튜브 URL": youtubeUrl ? (
                       <a
                         href={youtubeUrl}
                         target="_blank"
                         rel="noreferrer"
-                        style={{
-                          fontSize: 16,
-                          color: "#1677ff",
-                          wordBreak: "break-all",
-                          whiteSpace: "normal",
-                          display: "inline-block",
-                          maxWidth: "100%",
-                        }}
+                        className="text-[16px] text-primary break-words break-all whitespace-normal inline-block w-full"
                       >
                         {youtubeUrl}
                       </a>
@@ -495,8 +366,8 @@ const RecordDetailClient: React.FC = () => {
                 />
               </UniformCard>
             </div>
-          </Col>
-        </Row>
+          </div>
+        </div>
       </div>
     </div>
   );

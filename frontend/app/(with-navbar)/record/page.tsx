@@ -1,30 +1,32 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  Layout,
-  Card,
-  Typography,
-  Button,
-  Slider,
-  Empty,
-  Spin,
-  Tag,
-  DatePicker,
-  Pagination,
-  message,
-} from "antd";
-import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons";
+import { useRouter } from "next/navigation";
 import dayjs, { Dayjs } from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
-import { useRouter } from "next/navigation";
 import api from "@/lib/axios";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Slider } from "@/components/ui/slider";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import {
+  Loader2,
+  Menu,
+  ChevronLeft,
+  ChevronRight,
+  Calendar as CalendarIcon,
+} from "lucide-react";
 
 dayjs.extend(isBetween);
 
-const { Sider, Content } = Layout;
-const { Text } = Typography;
-
-/* ───────────────────────── 타입 ───────────────────────── */
+/* ── 타입 ── */
 interface Segment {
   startSec: number;
   endSec: number;
@@ -32,19 +34,11 @@ interface Segment {
   mean: number;
 }
 interface WorkoutRecord {
-  date: string; // "YYYY-MM-DD"
+  date: string;
   duration: number;
   youtubeUrl: string;
   mean: number;
   segments?: Segment[];
-}
-interface User {
-  id: string;
-  name: string;
-  age: number;
-  height: number;
-  weight: number;
-  records: WorkoutRecord[];
 }
 type DisplayRecord = WorkoutRecord & {
   id: string;
@@ -53,85 +47,6 @@ type DisplayRecord = WorkoutRecord & {
   height: number;
   weight: number;
   userId?: string;
-};
-
-/* ─────────────────────── 스타일 ─────────────────────── */
-/** 상단 네비게이션(헤더) 높이. 실제 높이에 맞게 조정하세요. */
-const HEADER_H = 64;
-
-/** 페이지 루트를 헤더 아래에 고정시켜 부모 스크롤을 제거 */
-const layoutStyle: React.CSSProperties = {
-  position: "fixed",
-  top: HEADER_H, // 헤더 바로 아래부터
-  left: 0,
-  right: 0,
-  bottom: 0, // 뷰포트 하단까지
-  height: `calc(100dvh - ${HEADER_H}px)`,
-  background: "#f5f5f5",
-  overflow: "hidden", // 부모 스크롤 제거
-};
-
-const innerLayoutStyle: React.CSSProperties = {
-  height: "100%", // 자식 레이아웃이 꽉 차도록
-  minHeight: 0,
-  background: "#f5f5f5",
-  overflow: "hidden", // 자식도 넘치지 않게
-};
-
-const siderStyle: React.CSSProperties = {
-  background: "#fff",
-  padding: 16,
-  height: "100%",
-  overflowY: "auto", // 사이드바 내용이 넘치면 여기서만 스크롤
-};
-
-const contentStyle: React.CSSProperties = {
-  padding: 24,
-  background: "#f5f5f5",
-  overflowY: "auto", // 본문 스크롤은 여기 하나만
-  minHeight: 0,
-  height: "100%",
-};
-
-const cardChrome: React.CSSProperties = {
-  borderRadius: 8,
-  boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-};
-const buttonChrome: React.CSSProperties = {
-  ...cardChrome,
-  width: "100%",
-  textAlign: "left",
-  background: "#fff",
-  border: "1px solid #eee",
-  padding: 16,
-  height: "100%",
-  whiteSpace: "normal",
-  display: "flex",
-  flexDirection: "column",
-  gap: 12,
-  transition:
-    "box-shadow .25s ease, transform .25s ease, border-color .25s ease",
-};
-const buttonHover: React.CSSProperties = {
-  boxShadow: "0 6px 18px rgba(0,0,0,0.18)",
-  transform: "translateY(-3px)",
-  borderColor: "#e2e2e2",
-};
-const SECTION_TITLE_FS = 17;
-const TAG_FS = 14;
-const LABEL_FS = 14;
-const pill: React.CSSProperties = {
-  borderRadius: 999,
-  padding: "4px 12px",
-  fontSize: TAG_FS,
-  lineHeight: "22px",
-  border: "none",
-};
-const labelCss: React.CSSProperties = {
-  opacity: 0.75,
-  marginRight: 8,
-  fontWeight: 600,
-  fontSize: LABEL_FS,
 };
 
 /* 유튜브 썸네일 */
@@ -156,65 +71,16 @@ const getThumb = (url: string) => {
   return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : null;
 };
 
-/* 공통 섹션 */
-type SectionProps = React.PropsWithChildren<{ title: string; first?: boolean }>;
-const Section = ({ title, first, children }: SectionProps) => (
-  <div
-    style={
-      first
-        ? {}
-        : { borderTop: "1px solid #eee", marginTop: 12, paddingTop: 12 }
-    }
-  >
-    <Text strong style={{ fontSize: SECTION_TITLE_FS }}>
-      {title}
-    </Text>
-    <div style={{ marginTop: 10 }}>{children}</div>
+/* 섹션/카드 */
+const Section: React.FC<
+  React.PropsWithChildren<{ title: string; first?: boolean }>
+> = ({ title, first, children }) => (
+  <div className={cn(!first && "border-t border-border mt-3 pt-3")}>
+    <div className="text-[17px] font-semibold">{title}</div>
+    <div className="mt-2.5">{children}</div>
   </div>
 );
 
-/* 16:9 썸네일 */
-const ThumbBox = ({ url }: { url: string }) => {
-  const src = getThumb(url);
-  if (!src) return null;
-  return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noreferrer"
-      onClick={(e) => e.stopPropagation()}
-      aria-label="유튜브 영상 보기"
-      style={{ display: "block", textDecoration: "none" }}
-    >
-      <div
-        style={{
-          border: "1px solid #eee",
-          borderRadius: 8,
-          background: "#fafafa",
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{ position: "relative", width: "100%", paddingTop: "56.25%" }}
-        >
-          <img
-            src={src}
-            alt="YouTube thumbnail"
-            style={{
-              position: "absolute",
-              inset: 0,
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-            }}
-          />
-        </div>
-      </div>
-    </a>
-  );
-};
-
-/* 카드형 컨테이너 */
 const CardLikeBox: React.FC<
   React.PropsWithChildren & { onClick?: () => void }
 > = ({ children, onClick }) => {
@@ -232,42 +98,64 @@ const CardLikeBox: React.FC<
         }
       }}
       onClick={onClick}
-      style={{
-        ...buttonChrome,
-        ...(hover ? buttonHover : {}),
-        cursor: clickable ? "pointer" : "default",
-      }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
+      className={cn(
+        "w-full rounded-lg border bg-card p-4 text-left shadow-sm transition",
+        clickable ? "cursor-pointer" : "cursor-default",
+        hover && "-translate-y-[3px] shadow-lg"
+      )}
     >
       {children}
     </div>
   );
 };
 
-/* ───────────────────── 유틸 (나이 계산 & 어댑터) ───────────────────── */
+const ThumbBox: React.FC<{ url?: string }> = ({ url }) => {
+  const src = url ? getThumb(url) : null;
+  const Frame: React.FC<React.PropsWithChildren> = ({ children }) => (
+    <div className="rounded-lg border bg-muted/20 overflow-hidden">
+      <div className="relative w-full pt-[56.25%]">{children}</div>
+    </div>
+  );
+  return src ? (
+    <a
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      onClick={(e) => e.stopPropagation()}
+      className="block no-underline"
+      aria-label="유튜브 영상 보기"
+    >
+      <Frame>
+        <img
+          src={src}
+          alt="YouTube thumbnail"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+      </Frame>
+    </a>
+  ) : (
+    <Frame />
+  );
+};
+
+/* 유틸 */
 const calcAgeFromBirth = (birth: string): number => {
   const b = dayjs(birth, "YYYY-MM-DD", true);
   if (!b.isValid()) return 0;
   const today = dayjs();
   let age = today.year() - b.year();
-  const beforeBirthday =
+  const before =
     today.month() < b.month() ||
     (today.month() === b.month() && today.date() < b.date());
-  if (beforeBirthday) age -= 1;
+  if (before) age -= 1;
   return age;
 };
 
-/** Swagger 응답 → 기존 타입으로 맵핑 */
-const adaptResponseToDisplay = (raw: any[]): DisplayRecord[] => {
-  const out: DisplayRecord[] = [];
-  raw.forEach((rec: any) => {
+const adaptResponseToDisplay = (raw: any[]): DisplayRecord[] =>
+  (raw ?? []).map((rec: any) => {
     const user = rec?.user ?? {};
-    const name: string = user?.nickname ?? "";
-    const age: number = calcAgeFromBirth(user?.birth ?? "");
-    const height: number = Number(user?.height ?? 0);
-    const weight: number = Number(user?.weight ?? 0);
-
     const segments: Segment[] | undefined = Array.isArray(rec?.timelines)
       ? rec.timelines.map((t: any) => ({
           startSec: Number(t?.youtube_start_sec ?? 0),
@@ -276,13 +164,12 @@ const adaptResponseToDisplay = (raw: any[]): DisplayRecord[] => {
           mean: Number(t?.score ?? 0),
         }))
       : undefined;
-
-    const display: DisplayRecord = {
+    return {
       id: String(rec?.id ?? ""),
-      name,
-      age,
-      height,
-      weight,
+      name: String(user?.nickname ?? ""),
+      age: calcAgeFromBirth(user?.birth ?? ""),
+      height: Number(user?.height ?? 0),
+      weight: Number(user?.weight ?? 0),
       userId: String(user?.id ?? ""),
       date: String(rec?.dateTime ?? "").split("T")[0] || "",
       duration: Number(rec?.workingout_time ?? 0),
@@ -290,27 +177,30 @@ const adaptResponseToDisplay = (raw: any[]): DisplayRecord[] => {
       mean: Number(rec?.total_score ?? 0),
       segments,
     };
-    out.push(display);
   });
-  return out;
+
+const formatHMS = (sec: number) => {
+  const s = Math.max(0, Math.floor(Number(sec) || 0));
+  const h = Math.floor(s / 3600),
+    m = Math.floor((s % 3600) / 60),
+    ss = s % 60;
+  if (h > 0) return `${h}시간 ${m}분 ${ss}초`;
+  if (m > 0) return `${m}분 ${ss}초`;
+  return `${ss}초`;
 };
 
-/* ───────────────────── 메인 컴포넌트 ───────────────────── */
+/* ── 메인 ── */
 const WorkoutDashboard: React.FC = () => {
   const router = useRouter();
-
-  // 전체 원본 목록(서버에서 1회 전체 가져옴)
   const [allRecords, setAllRecords] = useState<DisplayRecord[]>([]);
-  const [collapsed, setCollapsed] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
-  // 필터 UI 상태
   const [uiDuration, setUiDuration] = useState<[number, number]>([0, 999]);
   const [uiMean, setUiMean] = useState<[number, number]>([0, 100]);
   const [uiStartDate, setUiStartDate] = useState<Dayjs | null>(null);
   const [uiEndDate, setUiEndDate] = useState<Dayjs | null>(null);
 
-  // 실제 적용값
   const [duration, setDuration] = useState<[number, number]>([0, 999]);
   const [mean, setMean] = useState<[number, number]>([0, 100]);
   const [dateRange, setDateRange] = useState<[string | null, string | null]>([
@@ -318,31 +208,24 @@ const WorkoutDashboard: React.FC = () => {
     null,
   ]);
 
-  // 페이지네이션(프론트 전담)
   const [currentPage, setCurrentPage] = useState<number>(1);
   const pageSize = 8;
 
-  // ✅ 전체 데이터 1회 로드 (params 없이)
-  const fetchAllRecords = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get("/api/record");
-      const msg = Array.isArray(res?.data?.message) ? res.data.message : [];
-      const adapted = adaptResponseToDisplay(msg);
-      setAllRecords(adapted);
-    } catch (e) {
-      console.error("Failed to fetch /api/record:", e);
-      message.error("운동 기록을 불러오지 못했습니다.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchAllRecords();
+    (async () => {
+      try {
+        setLoading(true);
+        const res = await api.get("/api/record");
+        const msg = Array.isArray(res?.data?.message) ? res.data.message : [];
+        setAllRecords(adaptResponseToDisplay(msg));
+      } catch (e) {
+        console.error("Failed to fetch /api/record:", e);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
-  // 필터 적용
   const applyFilters = () => {
     setLoading(true);
     setTimeout(() => {
@@ -353,26 +236,22 @@ const WorkoutDashboard: React.FC = () => {
           ? [uiEndDate, uiStartDate]
           : [uiStartDate, uiEndDate];
         setDateRange([s.format("YYYY-MM-DD"), e.format("YYYY-MM-DD")]);
-      } else {
-        setDateRange([null, null]);
-      }
+      } else setDateRange([null, null]);
       setCurrentPage(1);
       setLoading(false);
-    }, 150);
+    }, 120);
   };
 
   const parseYMD = (d: string) => dayjs(d, "YYYY-MM-DD", true);
-  const isInDateRange = (d: string) => {
-    const [start, end] = dateRange;
-    if (!start || !end) return true;
+  const inRange = (d: string) => {
+    const [s, e] = dateRange;
+    if (!s || !e) return true;
     const cur = parseYMD(d);
     return (
-      cur.isValid() &&
-      cur.isBetween(parseYMD(start), parseYMD(end), "day", "[]")
+      cur.isValid() && cur.isBetween(parseYMD(s), parseYMD(e), "day", "[]")
     );
   };
 
-  // 필터링된 전체 목록
   const filtered = useMemo(
     () =>
       allRecords.filter(
@@ -381,30 +260,18 @@ const WorkoutDashboard: React.FC = () => {
           r.duration <= duration[1] &&
           r.mean >= mean[0] &&
           r.mean <= mean[1] &&
-          isInDateRange(r.date)
+          inRange(r.date)
       ),
     [allRecords, duration, mean, dateRange]
   );
 
-  // 현재 페이지에 보여줄 슬라이스
   const startIdx = (currentPage - 1) * pageSize;
-  const endIdx = startIdx + pageSize;
   const pageItems = useMemo(
-    () => filtered.slice(startIdx, endIdx),
-    [filtered, startIdx, endIdx]
+    () => filtered.slice(startIdx, startIdx + pageSize),
+    [filtered, startIdx]
   );
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
 
-  const formatHMS = (sec: number) => {
-    const s = Math.max(0, Math.floor(Number(sec) || 0));
-    const h = Math.floor(s / 3600);
-    const m = Math.floor((s % 3600) / 60);
-    const ss = s % 60;
-    if (h > 0) return `${h}시간 ${m}분 ${ss}초`;
-    if (m > 0) return `${m}분 ${ss}초`;
-    return `${ss}초`;
-  };
-
-  // 상세 이동
   const gotoDetail = (r: DisplayRecord) => {
     const q = new URLSearchParams({
       id: r.id,
@@ -419,83 +286,29 @@ const WorkoutDashboard: React.FC = () => {
       mean: String(r.mean),
       current: "0",
     });
-    if (r.segments && r.segments.length > 0) {
-      q.set("segments", JSON.stringify(r.segments));
-    }
+    if (r.segments?.length) q.set("segments", JSON.stringify(r.segments));
     router.push(`/record/detail?${q.toString()}`);
   };
 
-  const renderButtonCard = (r: DisplayRecord) => (
-    <CardLikeBox key={r.id} onClick={() => gotoDetail(r)}>
-      <Section title="운동 정보" first>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-          <Tag style={{ ...pill, background: "#FFF1E6" }}>
-            <span style={labelCss}>날짜 : </span> {r.date}
-          </Tag>
-          <Tag style={{ ...pill, background: "#FFEFEF" }}>
-            <span style={labelCss}>운동시간 : </span>
-            {Number.isFinite(Number(r.duration))
-              ? formatHMS(Number(r.duration))
-              : "-"}
-          </Tag>
-        </div>
-      </Section>
-
-      <Section title="기록 정보">
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-          <Tag style={{ ...pill, background: "#E9FFF3" }}>
-            <span style={{ ...labelCss }}>유사도 평균 : </span>{" "}
-            {r.mean.toFixed(1)}%
-          </Tag>
-        </div>
-      </Section>
-
-      <ThumbBox url={r.youtubeUrl} />
-    </CardLikeBox>
-  );
-
-  return (
-    <Layout style={layoutStyle}>
-      {/* 왼쪽: 필터 사이드바 */}
-      <Sider
-        width={300}
-        collapsible
-        collapsed={collapsed}
-        trigger={null}
-        style={siderStyle}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            marginBottom: 8,
-          }}
+  /* ── 사이드바 UI: 버튼/카드 동일 기준(정중앙) ── */
+  const FilterSidebar = (
+    <div className="p-4">
+      <div className="flex items-center justify-end mb-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setCollapsed((v) => !v)}
         >
-          {React.createElement(
-            collapsed ? MenuUnfoldOutlined : MenuFoldOutlined,
-            {
-              onClick: () => setCollapsed((v) => !v),
-              style: { fontSize: 20, cursor: "pointer" },
-            }
-          )}
-        </div>
+          <Menu className="h-5 w-5" />
+        </Button>
+      </div>
 
+      {/* 공통 폭 컨테이너: 버튼/카드가 같은 좌우 기준 사용 */}
+      <div className="mx-auto w-full" style={{ maxWidth: 320 }}>
         {!collapsed && (
           <Button
             onClick={applyFilters}
-            style={{
-              width: "100%",
-              background: "#003366",
-              color: "#fff",
-              border: "none",
-              height: 38,
-              borderRadius: 10,
-              fontWeight: 800,
-              fontSize: 16,
-              letterSpacing: 0.2,
-              marginBottom: 16,
-              marginTop: 10,
-            }}
+            className="w-full h-10 font-extrabold tracking-tight mb-4 bg-[#0f2552] text-white hover:bg-[#0b1c40]"
           >
             필터 적용
           </Button>
@@ -503,149 +316,240 @@ const WorkoutDashboard: React.FC = () => {
 
         {!collapsed && (
           <>
-            <Card
-              size="small"
-              title="운동시간 (분)"
-              style={{ ...cardChrome, marginBottom: 12, textAlign: "center" }}
-              headStyle={{
-                padding: "12px 16px",
-                fontSize: 16,
-                fontWeight: 700,
-              }}
-              bodyStyle={{ padding: 16, fontSize: 15 }}
-            >
-              <Slider
-                range
-                min={0}
-                max={999}
-                value={uiDuration}
-                onChange={(v) => setUiDuration(v as [number, number])}
-              />
-              <div style={{ textAlign: "center", color: "#555", fontSize: 15 }}>
-                {uiDuration[0]}분 ~ {uiDuration[1]}분
-              </div>
+            <Card className="w-full mb-3">
+              <CardHeader className="py-3">
+                <CardTitle className="text-base font-bold text-center">
+                  운동시간 (분)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0 pb-4">
+                <Slider
+                  value={uiDuration}
+                  min={0}
+                  max={999}
+                  step={1}
+                  onValueChange={(v) => setUiDuration([v[0] ?? 0, v[1] ?? 0])}
+                />
+                <div className="text-center text-sm text-muted-foreground mt-2">
+                  {uiDuration[0]}분 ~ {uiDuration[1]}분
+                </div>
+              </CardContent>
             </Card>
 
-            <Card
-              size="small"
-              title="유사도 평균 (%)"
-              style={{ ...cardChrome, marginBottom: 12, textAlign: "center" }}
-              headStyle={{
-                padding: "12px 16px",
-                fontSize: 16,
-                fontWeight: 700,
-              }}
-              bodyStyle={{ padding: 16, fontSize: 15 }}
-            >
-              <Slider
-                range
-                min={0}
-                max={100}
-                value={uiMean}
-                onChange={(v) => setUiMean(v as [number, number])}
-              />
-              <div style={{ textAlign: "center", color: "#555", fontSize: 15 }}>
-                {uiMean[0]}% ~ {uiMean[1]}%
-              </div>
+            <Card className="w-full mb-3">
+              <CardHeader className="py-3">
+                <CardTitle className="text-base font-bold text-center">
+                  유사도 평균 (%)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0 pb-4">
+                <Slider
+                  value={uiMean}
+                  min={0}
+                  max={100}
+                  step={1}
+                  onValueChange={(v) => setUiMean([v[0] ?? 0, v[1] ?? 0])}
+                />
+                <div className="text-center text-sm text-muted-foreground mt-2">
+                  {uiMean[0]}% ~ {uiMean[1]}%
+                </div>
+              </CardContent>
             </Card>
 
-            <Card
-              size="small"
-              title="날짜"
-              style={{ ...cardChrome, marginBottom: 12, textAlign: "center" }}
-              headStyle={{
-                padding: "12px 16px",
-                fontSize: 16,
-                fontWeight: 700,
-              }}
-              bodyStyle={{ padding: 16, fontSize: 15 }}
-            >
-              <div style={{ display: "grid", gap: 8 }}>
-                <DatePicker
-                  placeholder="Start date"
-                  onChange={(val) => setUiStartDate(val)}
-                  style={{ width: "100%" }}
-                  allowClear
-                />
-                <DatePicker
-                  placeholder="End date"
-                  onChange={(val) => setUiEndDate(val)}
-                  style={{ width: "100%" }}
-                  allowClear
-                />
-              </div>
-              <div
-                style={{
-                  textAlign: "center",
-                  color: "#555",
-                  fontSize: 15,
-                  marginTop: 8,
-                }}
-              >
-                {uiStartDate && uiEndDate
-                  ? `${uiStartDate.format("YYYY-MM-DD")} ~ ${uiEndDate.format(
-                      "YYYY-MM-DD"
-                    )}`
-                  : "전체 기간"}
-              </div>
+            <Card className="w-full mb-3">
+              <CardHeader className="py-3">
+                <CardTitle className="text-base font-bold text-center">
+                  날짜
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0 pb-4">
+                <div className="grid gap-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="justify-start">
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {uiStartDate
+                          ? uiStartDate.format("YYYY-MM-DD")
+                          : "Start date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={uiStartDate?.toDate()}
+                        onSelect={(d) => setUiStartDate(d ? dayjs(d) : null)}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="justify-start">
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {uiEndDate
+                          ? uiEndDate.format("YYYY-MM-DD")
+                          : "End date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={uiEndDate?.toDate()}
+                        onSelect={(d) => setUiEndDate(d ? dayjs(d) : null)}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="text-center text-sm text-muted-foreground mt-2">
+                  {uiStartDate && uiEndDate
+                    ? `${uiStartDate.format("YYYY-MM-DD")} ~ ${uiEndDate.format(
+                        "YYYY-MM-DD"
+                      )}`
+                    : "전체 기간"}
+                </div>
+              </CardContent>
             </Card>
           </>
         )}
-      </Sider>
+      </div>
+    </div>
+  );
 
-      {/* 오른쪽: 그리드 + 페이지네이션 */}
-      <Layout style={innerLayoutStyle}>
-        <Content style={contentStyle}>
-          <Spin spinning={loading}>
-            {filtered.length === 0 ? (
-              <div
-                style={{
-                  height: "60vh",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Empty description="조건에 맞는 기록이 없습니다" />
+  /* 레이아웃: 완전 반응형 */
+  const gridCols = collapsed
+    ? "grid-cols-[56px_minmax(0,1fr)]"
+    : "grid-cols-[clamp(56px,20vw,300px)_minmax(0,1fr)]";
+
+  return (
+    <div className="w-full">
+      {/* 바깥 그리드에는 패딩을 주지 않고, 메인에만 패딩을 줘 사이드바 치우침 방지 */}
+      <div className={`grid w-full ${gridCols} gap-0`}>
+        {/* 사이드바: sticky + 내부 스크롤 */}
+        <aside
+          className="border-r bg-white"
+          style={{
+            position: "sticky",
+            top: 0,
+            alignSelf: "start",
+            maxHeight: "100svh",
+            overflowY: "auto",
+          }}
+        >
+          {FilterSidebar}
+        </aside>
+
+        {/* 메인: 반응형 카드 그리드 */}
+        <main className="relative bg-muted/30 px-4 sm:px-6 lg:px-8 py-6">
+          {loading && (
+            <div className="fixed inset-0 z-10 flex items-center justify-center bg-background/50">
+              <div className="flex items-center gap-2 rounded-md border bg-background px-4 py-2 shadow-sm">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm">불러오는 중...</span>
               </div>
-            ) : (
-              <>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-                    gap: 16,
-                    alignItems: "stretch",
-                  }}
-                >
-                  {pageItems.map((r) => (
-                    <div key={r.id} style={{ height: "100%" }}>
-                      {renderButtonCard(r)}
-                    </div>
-                  ))}
-                </div>
+            </div>
+          )}
 
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    marginTop: 16,
-                  }}
+          {filtered.length === 0 ? (
+            <div className="min-h-[40svh] flex items-center justify-center">
+              <Card className="w-full max-w-md">
+                <CardHeader>
+                  <CardTitle>조건에 맞는 기록이 없습니다</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    필터를 조정하거나 기간을 넓혀보세요.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <>
+              <div className="grid [grid-template-columns:repeat(auto-fit,minmax(280px,1fr))] gap-4 items-stretch">
+                {pageItems.map((r) => (
+                  <div key={r.id} className="h-full">
+                    <CardLikeBox onClick={() => gotoDetail(r)}>
+                      <Section title="운동 정보" first>
+                        <div className="flex flex-wrap gap-2.5">
+                          <Badge
+                            variant="secondary"
+                            className="rounded-full px-3 py-1 text-[14px]"
+                          >
+                            <span className="opacity-75 font-semibold mr-2">
+                              날짜 :
+                            </span>{" "}
+                            {r.date}
+                          </Badge>
+                          <Badge
+                            variant="secondary"
+                            className="rounded-full px-3 py-1 text-[14px]"
+                          >
+                            <span className="opacity-75 font-semibold mr-2">
+                              운동시간 :
+                            </span>
+                            {Number.isFinite(Number(r.duration))
+                              ? formatHMS(Number(r.duration))
+                              : "-"}
+                          </Badge>
+                        </div>
+                      </Section>
+
+                      <Section title="기록 정보">
+                        <div className="flex flex-wrap gap-2.5">
+                          <Badge
+                            variant="outline"
+                            className="rounded-full px-3 py-1 text-[14px]"
+                          >
+                            <span className="opacity-75 font-semibold mr-2">
+                              유사도 평균 :
+                            </span>{" "}
+                            {r.mean.toFixed(1)}%
+                          </Badge>
+                        </div>
+                      </Section>
+
+                      <div className="mt-3">
+                        <ThumbBox url={r.youtubeUrl} />
+                      </div>
+                    </CardLikeBox>
+                  </div>
+                ))}
+              </div>
+
+              {/* 페이지네이션 */}
+              <div className="flex items-center justify-center gap-2 mt-4">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 >
-                  <Pagination
-                    current={currentPage}
-                    pageSize={pageSize}
-                    total={filtered.length}
-                    showSizeChanger={false}
-                    onChange={(page) => setCurrentPage(page)}
-                  />
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="text-sm text-muted-foreground select-none">
+                  Page{" "}
+                  <span className="font-semibold text-foreground">
+                    {currentPage}
+                  </span>{" "}
+                  / {totalPages}
                 </div>
-              </>
-            )}
-          </Spin>
-        </Content>
-      </Layout>
-    </Layout>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  disabled={currentPage >= totalPages}
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </>
+          )}
+        </main>
+      </div>
+    </div>
   );
 };
 

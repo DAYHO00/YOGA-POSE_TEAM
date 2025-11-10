@@ -1,63 +1,55 @@
-"use client"
+// src/components/ui/slider.tsx
+import * as React from "react";
+import * as SliderPrimitive from "@radix-ui/react-slider";
+import { cn } from "@/lib/utils";
 
-import * as React from "react"
-import * as SliderPrimitive from "@radix-ui/react-slider"
+export type SliderProps = React.ComponentProps<typeof SliderPrimitive.Root>;
 
-import { cn } from "@/lib/utils"
-
-function Slider({
-  className,
-  defaultValue,
-  value,
-  min = 0,
-  max = 100,
-  ...props
-}: React.ComponentProps<typeof SliderPrimitive.Root>) {
-  const _values = React.useMemo(
-    () =>
-      Array.isArray(value)
-        ? value
-        : Array.isArray(defaultValue)
-          ? defaultValue
-          : [min, max],
-    [value, defaultValue, min, max]
-  )
+const Slider = React.forwardRef<
+  React.ElementRef<typeof SliderPrimitive.Root>,
+  SliderProps
+>(({ className, value, defaultValue, ...props }, ref) => {
+  // value/defaultValue 배열 길이에 맞춰 Thumb 개수 결정
+  const thumbCount =
+    (Array.isArray(value) && value.length) ||
+    (Array.isArray(defaultValue) && defaultValue.length) ||
+    1;
 
   return (
     <SliderPrimitive.Root
-      data-slot="slider"
-      defaultValue={defaultValue}
-      value={value}
-      min={min}
-      max={max}
+      ref={ref}
+      value={value as number[] | undefined}
+      defaultValue={defaultValue as number[] | undefined}
       className={cn(
-        "relative flex w-full touch-none items-center select-none data-[disabled]:opacity-50 data-[orientation=vertical]:h-full data-[orientation=vertical]:min-h-44 data-[orientation=vertical]:w-auto data-[orientation=vertical]:flex-col",
+        "relative flex w-full touch-none select-none items-center",
         className
       )}
       {...props}
     >
-      <SliderPrimitive.Track
-        data-slot="slider-track"
-        className={cn(
-          "bg-white/30 relative grow overflow-hidden rounded-full data-[orientation=horizontal]:h-1.5 data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-1.5"
-        )}
-      >
-        <SliderPrimitive.Range
-          data-slot="slider-range"
-          className={cn(
-            "bg-white absolute data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full"
-          )}
-        />
+      {/* 선(트랙) */}
+      <SliderPrimitive.Track className="relative h-2 w-full grow overflow-hidden rounded-full bg-[#e6f0ff]">
+        {/* 채워진 구간 */}
+        <SliderPrimitive.Range className="absolute h-full bg-[#2563eb]" />
       </SliderPrimitive.Track>
-      {Array.from({ length: _values.length }, (_, index) => (
+
+      {/* 원(썸)들 */}
+      {Array.from({ length: thumbCount }).map((_, i) => (
         <SliderPrimitive.Thumb
-          data-slot="slider-thumb"
-          key={index}
-          className="border-transparent block size-4 shrink-0 rounded-full bg-white shadow-md transition-[color,box-shadow] hover:ring-2 hover:ring-white/50 focus-visible:ring-4 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50"
+          // key는 필수
+          key={i}
+          className="block h-5 w-5 rounded-full border-2 border-[#2563eb] bg-white
+                     shadow transition-colors
+                     ring-offset-background focus-visible:outline-none
+                     focus-visible:ring-2 focus-visible:ring-[#2563eb] focus-visible:ring-offset-2
+                     disabled:pointer-events-none disabled:opacity-50"
+          aria-label={
+            thumbCount > 1 ? (i === 0 ? "Minimum" : "Maximum") : "Value"
+          }
         />
       ))}
     </SliderPrimitive.Root>
-  )
-}
+  );
+});
+Slider.displayName = "Slider";
 
-export { Slider }
+export { Slider };
