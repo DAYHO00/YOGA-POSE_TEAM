@@ -283,10 +283,15 @@ function WorkoutContent() {
       };
 
       // API 호출
-      await api.post("/api/record/", recordData);
+      const res = await api.post("/api/record/", recordData);
 
-      toast.success("운동 기록이 저장되었습니다.");
-      router.push("/");
+      const newId = res?.data?.message?.id; // 백엔드 응답 키에 맞춰 조정
+
+      if (newId) {
+        toast.success("운동 기록이 저장되었습니다.");
+        router.push(`/record?openId=${newId}`); // ✅ 목록을 거치지 않고 곧바로 상세
+        return;
+      }
     } catch (error: any) {
       console.error("운동 기록 저장 실패:", error);
       toast.error(

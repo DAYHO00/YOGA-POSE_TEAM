@@ -1,6 +1,7 @@
 "use client";
-import React, { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import dayjs, { Dayjs } from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
 import api from "@/lib/axios";
@@ -153,7 +154,7 @@ const adaptResponseToDisplay = (raw: any[]): DisplayRecord[] =>
       weight: Number(user?.weight ?? 0),
       userId: String(user?.id ?? ""),
       date: String(rec?.dateTime ?? "").split("T")[0] || "",
-      duration: Number(rec?.workingout_time ?? 0),
+      duration: Number(rec?.workingout_time ?? 0), // 필요 시 초/분 단위 통일
       youtubeUrl: String(rec?.youtube_url ?? ""),
       mean: Number(rec?.total_score ?? 0),
       segments,
@@ -173,6 +174,10 @@ const formatHMS = (sec: number) => {
 /* ── 메인 ── */
 const WorkoutDashboard: React.FC = () => {
   const router = useRouter();
+  const sp = useSearchParams();
+  const openId = sp.get("openId") ?? "";
+  const hasOpenedRef = useRef(false);
+
   const [allRecords, setAllRecords] = useState<DisplayRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -206,6 +211,27 @@ const WorkoutDashboard: React.FC = () => {
       }
     })();
   }, []);
+
+  // ✅ openId가 있으면 목록 로드 완료 후 자동 상세 진입
+  useEffect(() => {
+    if (!openId || hasOpenedRef.current || loading) return;
+
+    const target = allRecords.find((r) => String(r.id) === String(openId));
+    if (!target) return; // 아직 목록에 해당 항목이 반영되지 않았으면 다음 렌더에서 재시도
+
+    hasOpenedRef.current = true;
+
+    // URL에서 openId 제거 (뒤로가기 시 재자동 이동 방지)
+    const params = new URLSearchParams(sp.toString());
+    params.delete("openId");
+    const cleaned = params.toString()
+      ? `/record?${params.toString()}`
+      : `/record`;
+    router.replace(cleaned);
+
+    // 목록에서 클릭한 것과 동일하게 상세로 이동
+    gotoDetail(target);
+  }, [openId, allRecords, loading, router, sp]);
 
   const applyFilters = () => {
     setLoading(true);
@@ -452,14 +478,13 @@ const WorkoutDashboard: React.FC = () => {
                 {pageItems.map((r) => (
                   <div key={r.id} className="h-full">
                     <CardLikeBox onClick={() => gotoDetail(r)}>
-                      {/* 위 정보 영역: '최소 높이'만 보장 + 날짜/운동시간은 항상 세로 */}
+                      {/* 위 정보 영역 */}
                       <div className="flex flex-col gap-3 min-h-[140px] md:min-h-[160px] xl:min-h-[180px]">
                         <div>
                           <div className="text-[17px] font-semibold mb-2">
                             운동 정보
                           </div>
 
-                          {/* ✅ 항상 세로(수직) 고정 */}
                           <div className="flex flex-col items-start gap-2">
                             <Badge
                               variant="secondary"
@@ -502,12 +527,11 @@ const WorkoutDashboard: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* 16:9 썸네일 — 카드 하단으로 밀착 */}
+                      {/* 썸네일 */}
                       <div className="mt-auto pt-3">
                         <ThumbBox url={r.youtubeUrl} />
                       </div>
 
-                      {/* 남는 여백 채우기 */}
                       <div className="flex-1" />
                     </CardLikeBox>
                   </div>
