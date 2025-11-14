@@ -5,6 +5,7 @@ const createSourceState = () => ({
   landmarks: null as Landmark[] | null,
   angles: null as JointAngles | null,
   fps: 0 as number,
+  latency: 0 as number,
   previousAngles: {} as Partial<JointAngles>,
   vectorized: [] as number[],
   poseClass: "unknown",
@@ -31,6 +32,7 @@ interface PoseStore {
     fps: number,
     vectorized: number[],
     poseClass: string,
+    latency?: number
   ) => void;
 
   setImageData: (
@@ -39,6 +41,7 @@ interface PoseStore {
     fps: number,
     vectorized: number[],
     poseClass: string,
+    latency?: number
   ) => void;
 
   setVideoData: (
@@ -47,6 +50,7 @@ interface PoseStore {
     fps: number,
     vectorized: number[],
     poseClass: string,
+    latency?: number
   ) => void;
 
   resetAllData: () => void;
@@ -79,19 +83,43 @@ export const usePoseStore = create<PoseStore>((set) => ({
       [source]: { ...state[source], previousAngles: angles },
     })),
 
-  setWebcamData: (landmarks, angles, fps, vectorized, poseClass) =>
+  setWebcamData: (landmarks, angles, fps, vectorized, poseClass, latency = 0) =>
     set((_) => ({
-      webcam: { landmarks, angles, fps, previousAngles: {}, vectorized, poseClass },
+      webcam: {
+        landmarks,
+        angles,
+        fps,
+        latency,
+        previousAngles: {},
+        vectorized,
+        poseClass,
+      },
     })),
 
-  setImageData: (landmarks, angles, fps, vectorized, poseClass) =>
+  setImageData: (landmarks, angles, fps, vectorized, poseClass, latency = 0) =>
     set((_) => ({
-      image: { landmarks, angles, fps, previousAngles: {}, vectorized, poseClass },
+      image: {
+        landmarks,
+        angles,
+        fps,
+        latency,
+        previousAngles: {},
+        vectorized,
+        poseClass,
+      },
     })),
 
-  setVideoData: (landmarks, angles, fps, vectorized, poseClass) =>
+  setVideoData: (landmarks, angles, fps, vectorized, poseClass, latency = 0) =>
     set((_) => ({
-      video: { landmarks, angles, fps, previousAngles: {}, vectorized, poseClass },
+      video: {
+        landmarks,
+        angles,
+        fps,
+        latency,
+        previousAngles: {},
+        vectorized,
+        poseClass,
+      },
     })),
 
   resetImage: () => set({ image: createSourceState() }),

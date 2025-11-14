@@ -97,8 +97,8 @@ export function VideoCanvas({
 
       ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
 
-      const now = performance.now();
-      const results = landmarker.detectForVideo(videoElement, now);
+      const detectStartTime = performance.now();
+      const results = landmarker.detectForVideo(videoElement, detectStartTime);
 
       if (results.landmarks && results.landmarks.length > 0) {
         const landmarks = results.landmarks[0];
@@ -118,15 +118,25 @@ export function VideoCanvas({
           );
 
           const fps = lastFrameTime.current
-            ? Math.round(1000 / (now - lastFrameTime.current))
+            ? Math.round(1000 / (detectStartTime - lastFrameTime.current))
             : 0;
-          lastFrameTime.current = now;
+          lastFrameTime.current = detectStartTime;
 
           // 포즈 분류
           const poseClass = classifyPoseWithVectorized(data, angles);
 
+          // 전체 처리 시간 계산 (ms)
+          const latency = Math.round(performance.now() - detectStartTime);
+
           // Store에 저장
-          setVideoData(landmarks, angles, fps, data, poseClass.bestPose);
+          setVideoData(
+            landmarks,
+            angles,
+            fps,
+            data,
+            poseClass.bestPose,
+            latency
+          );
 
           drawSkeleton(ctx, landmarks);
         } else {

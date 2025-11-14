@@ -20,6 +20,7 @@ import TimelineClipper, {
 } from "@/components/timeline/TimelineClipper";
 import SimilarityDisplay from "@/components/workout/SimilarityDisplay";
 import api from "@/lib/axios";
+import { PerformanceMonitor } from "@/components/workout/PerformanceMonitor";
 
 function useWebcamLifecycle(isReady: boolean) {
   const startWebcam = useWebcamStore((state) => state.startWebcam);
@@ -109,27 +110,86 @@ function useWebcamVideoElement(
       return;
     }
 
-    const setupVideo = (retry = 0) => {
+    let mounted = true;
+    let retryTimeout: NodeJS.Timeout | null = null;
+
+    const setupVideo = async (retry = 0) => {
+      if (!mounted) return;
+
       const video = webcamVideoRef.current;
 
       if (!video) {
-        if (retry < 5) setTimeout(() => setupVideo(retry + 1), 100);
+        if (retry < 10) {
+          retryTimeout = setTimeout(() => setupVideo(retry + 1), 100);
+        } else {
+          console.error("웹캠 비디오 엘리먼트를 찾을 수 없습니다.");
+        }
         return;
       }
 
-      if (video.srcObject !== webcamStream) {
-        video.srcObject = webcamStream;
-      }
+      try {
+        // 이전 스트림 정리
+        if (video.srcObject && video.srcObject !== webcamStream) {
+          const oldStream = video.srcObject as MediaStream;
+          oldStream.getTracks().forEach((track) => track.stop());
+          video.srcObject = null;
+        }
 
-      video
-        .play()
-        .then(() => {})
-        .catch((error) => {
-          if (retry < 5) setTimeout(() => setupVideo(retry + 1), 200);
-        });
+        // 새 스트림 설정
+        if (video.srcObject !== webcamStream) {
+          video.srcObject = webcamStream;
+
+          // 메타데이터 로드 대기
+          await new Promise<void>((resolve, reject) => {
+            const timeout = setTimeout(
+              () => reject(new Error("Metadata timeout")),
+              5000
+            );
+            video.onloadedmetadata = () => {
+              clearTimeout(timeout);
+              resolve();
+            };
+            video.onerror = () => {
+              clearTimeout(timeout);
+              reject(new Error("Video load error"));
+            };
+          });
+        }
+
+        // 재생
+        if (video.paused) {
+          await video.play();
+        }
+
+        console.log(`웹캠 비디오 재생 성공 (시도 ${retry + 1})`);
+      } catch (error) {
+        console.warn(`웹캠 설정 실패 (시도 ${retry + 1}):`, error);
+
+        if (retry < 10 && mounted) {
+          retryTimeout = setTimeout(() => setupVideo(retry + 1), 300);
+        } else {
+          console.error("웹캠 설정 최종 실패:", error);
+          toast.error("웹캠 연결에 실패했습니다. 페이지를 새로고침해주세요.");
+        }
+      }
     };
 
     setupVideo();
+
+    return () => {
+      mounted = false;
+      if (retryTimeout) clearTimeout(retryTimeout);
+
+      const video = webcamVideoRef.current;
+      if (video) {
+        video.pause();
+        if (video.srcObject) {
+          const stream = video.srcObject as MediaStream;
+          stream.getTracks().forEach((track) => track.stop());
+          video.srcObject = null;
+        }
+      }
+    };
   }, [webcamStream, isWebcamActive, webcamVideoRef]);
 }
 
@@ -455,6 +515,8 @@ function WorkoutContent() {
           </div>
         </div>
       </main>
+
+      <PerformanceMonitor />
 
       <TimelineClipper ref={timelineClipperRef} />
 

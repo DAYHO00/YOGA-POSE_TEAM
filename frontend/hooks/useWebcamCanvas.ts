@@ -84,8 +84,10 @@ export function useWebcamCanvas({
       // console.log('벡터', vec);
 
       // 포즈 감지
-      const now = performance.now();
-      const results = landmarker.detectForVideo(video, now);
+      const detectStartTime = performance.now();
+      const results = landmarker.detectForVideo(video, detectStartTime);
+      // const detectEndTime = performance.now();
+      // const detectionLatency = detectEndTime - detectStartTime;
 
       if (results.landmarks && results.landmarks.length > 0) {
         const landmarks = results.landmarks[0];
@@ -109,6 +111,8 @@ export function useWebcamCanvas({
         drawSkeleton(ctx, landmarks);
 
         if (worldLandmarks) {
+          // const totalLatency = performance.now() - detectStartTime;
+
           // 각도 계산
           const angles = calculateAllAngles(
             worldLandmarks,
@@ -118,15 +122,25 @@ export function useWebcamCanvas({
 
           // FPS 계산
           const fps = lastFrameTime.current
-            ? Math.round(1000 / (now - lastFrameTime.current))
+            ? Math.round(1000 / (detectStartTime - lastFrameTime.current))
             : 0;
-          lastFrameTime.current = now;
+          lastFrameTime.current = detectStartTime;
 
           // 포즈 분류
           const poseClass = classifyPoseWithVectorized(data);
 
+          // 전체 처리 시간 계산 (ms)
+          const latency = Math.round(performance.now() - detectStartTime);
+
           // Store에 저장
-          setWebcamData(landmarks, angles, fps, data, poseClass.bestPose);
+          setWebcamData(
+            landmarks,
+            angles,
+            fps,
+            data,
+            poseClass.bestPose,
+            latency
+          );
 
           // 스켈레톤 그리기
           drawSkeleton(ctx, landmarks);
