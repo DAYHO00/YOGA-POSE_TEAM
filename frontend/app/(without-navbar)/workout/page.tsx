@@ -3,10 +3,7 @@
 import { useRef, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { usePoseStore, useVideoStore, useWebcamStore } from "@/store";
-import {
-  calculateSimilarityWithAnglesAndVectorized,
-  calculateSimilarityWithVectorized,
-} from "@/lib/mediapipe/similarity-calculator";
+import { calculateSimilarityWithAnglesAndVectorized } from "@/lib/mediapipe/similarity-calculator";
 import { calculateContainerWidths } from "@/lib/workout/utils";
 import { useMediaPipe } from "@/hooks/useMediaPipe";
 import {
@@ -79,27 +76,32 @@ function WorkoutContent() {
 
   const P1 = webcam.vectorized;
   const P2 = video.vectorized;
-  const similarityResult = calculateSimilarityWithAnglesAndVectorized(
+  const similarityValue = calculateSimilarityWithAnglesAndVectorized(
     P1,
     P2,
     webcam.angles,
-    video.angles
+    video.angles,
+    1
   );
 
   const { videoContainerWidth, webcamContainerWidth } =
     calculateContainerWidths(settings);
 
+  const [showFeedback, setShowFeedback] = useState(true);
+
   return (
-    <div className="flex flex-col h-screen bg-black text-white">
+    <div className='flex flex-col h-screen bg-black text-white'>
       <ModelLoadingOverlay />
 
       <WorkoutHeader
         isReady={isReady}
         onSettingsClick={() => setIsSettingsOpen(true)}
         onExitClick={handleExit}
+        showFeedback={showFeedback}
+        onToggleFeedback={() => setShowFeedback(!showFeedback)}
       />
 
-      <main className="flex flex-1 overflow-hidden">
+      <main className='flex flex-1 overflow-hidden'>
         <VideoSection
           videoRef={videoRef}
           isInitialized={isInitialized}
@@ -128,7 +130,10 @@ function WorkoutContent() {
 
       <TimelineClipper ref={timelineClipperRef} />
 
-      <SimilarityDisplay similarityValue={similarityResult.combinedScore} />
+      <SimilarityDisplay
+        similarityValue={similarityValue.combinedScore}
+        showFeedback={showFeedback}
+      />
 
       <WorkoutSettingsModal
         isOpen={isSettingsOpen}
