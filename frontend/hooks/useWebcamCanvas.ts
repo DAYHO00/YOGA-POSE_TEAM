@@ -71,7 +71,7 @@ export function useWebcamCanvas({
 
       // 비디오 프레임 그리기
       ctx.save();
-      ctx.scale(-1, 1);
+      //   ctx.scale(-1, 1);
       ctx.translate(-canvas.width, 0);
       ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
       ctx.restore();
