@@ -537,3 +537,20 @@ export function vectorize(
   const result = data.flat();
   return result;
 }
+
+// 관절 전체가 프레임 내부에 들어왔는지 확인
+export function isPersonInFrame(Landmarks: Landmark[]): boolean {
+    let invisibleCount = 0;
+    for (const landmark of Landmarks) {
+        // console.log((landmark.visibility??0) < MIN_VISIBILITY)
+        if ((landmark.visibility??0) < MIN_VISIBILITY) {
+        invisibleCount++;
+        }
+    }
+    // console.log(Landmarks)
+    console.log(invisibleCount)
+    if(invisibleCount >= 12) {
+        return false;
+    }
+    return true;
+}

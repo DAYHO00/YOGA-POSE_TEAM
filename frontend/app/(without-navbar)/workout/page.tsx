@@ -28,6 +28,7 @@ import {
   WorkoutHeader,
   WorkoutSettingsModal,
 } from "@/components/workout";
+import { isPersonInFrame } from "@/lib/mediapipe/angle-calculator";
 
 function WorkoutContent() {
   const router = useRouter();
@@ -74,13 +75,18 @@ function WorkoutContent() {
 
   const { handleTogglePlay, handleSeek } = useVideoControls(videoRef);
 
-  const similarityValue = calculateSimilarityWithAnglesAndVectorized(
-    video.vectorized,
-    webcam.vectorized,
-    video.angles,
-    webcam.angles,
-    1
-  );
+  const isPersonInWebcamFrame = webcam.landmarks
+    ? isPersonInFrame(webcam.landmarks)
+    : false;
+  const similarityValue = isPersonInWebcamFrame
+    ? calculateSimilarityWithAnglesAndVectorized(
+        video.vectorized,
+        webcam.vectorized,
+        video.angles,
+        webcam.angles,
+        1
+      ).combinedScore
+    : 0;
 
   const { videoContainerWidth, webcamContainerWidth } =
     calculateContainerWidths(settings);
@@ -129,7 +135,7 @@ function WorkoutContent() {
       <TimelineClipper ref={timelineClipperRef} />
 
       <SimilarityDisplay
-        similarityValue={similarityValue.combinedScore}
+        similarityValue={similarityValue}
         showFeedback={showFeedback}
       />
 
