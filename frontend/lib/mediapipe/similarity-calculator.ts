@@ -345,11 +345,11 @@ export function calculateSimilarityWithAnglesAndVectorized(
   userAngles: JointAngles | null,
   lambda: number
 ): SimilarityResult {
-  //   const vectorizedScore = calculateSimilarityWithVectorized(
-  //     referenceVectorized,
-  //     userVectorized,
-  //     1
-  //   );
+  const vectorizedScore = calculateSimilarityWithVectorized(
+    referenceVectorized,
+    userVectorized,
+    1
+  );
 
   const heelAndFootIndexScore = calculateHeelAndFootIndexSimilarity(
     referenceVectorized,
@@ -389,16 +389,14 @@ export function calculateSimilarityWithAnglesAndVectorized(
     1.1;
 
   return {
-    vectorizedScore: heelAndFootIndexScore,
+    vectorizedScore,
     angleScore,
     combinedScore,
   };
 }
 
 export function mapCombinedScore(combinedScore: number): number {
-  return (
-    30 + 70 * Math.sqrt(Math.max(0, Math.min(combinedScore - 60, 40)) / 40)
-  );
+  return combinedScore / 1.1;
 }
 
 // 좌우 반전된 벡터 데이터 생성 함수

@@ -89,7 +89,7 @@ function WorkoutContent() {
           video.angles,
           webcam.angles,
           1
-        ).combinedScore
+        ).vectorizedScore
       ) * isPersonInWebcamFrame
     : 0;
 
