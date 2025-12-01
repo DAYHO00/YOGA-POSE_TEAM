@@ -374,14 +374,19 @@ export function calculateSimilarityWithAnglesAndVectorized(
   // console.log("foot_distance : ", foot_distance);
   const angleScore =
     referenceAngles && userAngles
-      ? calculateSimilarityWithAngles(referenceAngles, userAngles, "_")
+      ? calculateSimilarityWithAngles(
+          referenceAngles,
+          normalizeMirroredAngles(userAngles),
+          "_"
+        )
       : 0;
 
   // 가중치 조정 (벡터화된 데이터에 더 큰 비중 부여)
   const combinedScore =
-    lambda * angleScore +
-    ((1 - lambda) / 4) * heelAndFootIndexScore +
-    ((1 - lambda) / 4) * 3 * foot_distance;
+    (lambda * angleScore +
+      ((1 - lambda) / 4) * heelAndFootIndexScore +
+      ((1 - lambda) / 4) * 3 * foot_distance) /
+    1.2;
 
   return {
     vectorizedScore: heelAndFootIndexScore,
